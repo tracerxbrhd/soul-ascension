@@ -1,0 +1,7 @@
+{
+  "name": "title.soul_ascension.transcendent",
+  "description": "title.soul_ascension.transcendent.description",
+  "icon": "soul_ascension:textures/gui/icons/title.png",
+  "order": 100,
+  "conditions": { "minimum_level": 100 }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "title.soul_ascension.ethereal_paragon",
+  "description": "title.soul_ascension.ethereal_paragon.description",
+  "icon": "soul_ascension:textures/gui/icons/title.png",
+  "order": 75,
+  "conditions": { "minimum_level": 75 }
+}

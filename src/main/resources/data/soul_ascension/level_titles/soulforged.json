@@ -1,0 +1,7 @@
+{
+  "name": "title.soul_ascension.soulforged",
+  "description": "title.soul_ascension.soulforged.description",
+  "icon": "soul_ascension:textures/gui/icons/title.png",
+  "order": 50,
+  "conditions": { "minimum_level": 50 }
+}

@@ -1,0 +1,92 @@
+package dev.uapi.soulascension.config;
+
+import net.neoforged.neoforge.common.ModConfigSpec;
+
+import net.minecraft.resources.ResourceLocation;
+
+import java.util.Locale;
+import java.util.Optional;
+
+public final class SoulAscensionClientConfig {
+    public static final ModConfigSpec SPEC;
+    public static final ModConfigSpec.BooleanValue SHOW_ATTRIBUTE_NAMESPACES;
+    public static final ModConfigSpec.ConfigValue<String> HIDDEN_ATTRIBUTES;
+    public static final ModConfigSpec.ConfigValue<String> VISIBLE_ATTRIBUTES;
+    public static final ModConfigSpec.ConfigValue<String> ATTRIBUTE_CATEGORIES;
+
+    static {
+        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
+        builder.comment("Attribute list, details, and centralized visibility filters.")
+            .push("attribute_display");
+        SHOW_ATTRIBUTE_NAMESPACES = builder.comment(
+            "Show registry IDs in the attribute detail pane.",
+            "Advanced tooltips (F3+H) also reveal IDs. Default: false.")
+            .define("showAttributeNamespaces", false);
+        HIDDEN_ATTRIBUTES = builder.comment(
+            "Comma-separated attribute IDs hidden from the dynamic attribute page.",
+            "Entries in visibleAttributes override this list.",
+            "The defaults hide low-value engine/movement internals and unsupported creative-only values.")
+            .define("hiddenAttributes", String.join(",",
+                "minecraft:generic.max_absorption",
+                "minecraft:generic.flying_speed",
+                "minecraft:generic.explosion_knockback_resistance",
+                "minecraft:player.block_break_speed",
+                "minecraft:generic.fall_damage_multiplier",
+                "minecraft:player.sweeping_damage_ratio",
+                "minecraft:generic.safe_fall_distance",
+                "minecraft:player.mining_efficiency",
+                "minecraft:player.sneaking_speed",
+                "minecraft:player.submerged_mining_speed",
+                "minecraft:generic.burning_time",
+                "minecraft:generic.gravity",
+                "minecraft:generic.jump_strength",
+                "minecraft:generic.movement_efficiency",
+                "minecraft:generic.scale",
+                "minecraft:generic.water_movement_efficiency",
+                "minecraft:generic.oxygen_bonus",
+                "neoforge:creative_flight",
+                "neoforge:name_tag_distance",
+                "neoforge:nametag_distance",
+                "neoforge:swim_speed",
+                "apothic_attributes:creative_flight",
+                "apothic_attributes:mining_speed"));
+        VISIBLE_ATTRIBUTES = builder.comment(
+            "Comma-separated attribute IDs that must be shown even if they are in hiddenAttributes.",
+            "Default: empty. Add minecraft:generic.oxygen_bonus here to opt in to Oxygen Bonus.")
+            .define("visibleAttributes", "");
+        ATTRIBUTE_CATEGORIES = builder.comment(
+            "Semicolon-separated attribute-to-category overrides: attribute_id=category.",
+            "Built-in categories: damage, defense, mobility, utility, magic, other.",
+            "Example: examplemod:spell_power=magic")
+            .define("attributeCategories", "");
+        builder.pop();
+        SPEC = builder.build();
+    }
+
+    private SoulAscensionClientConfig() {}
+
+    public static boolean hiddenAttribute(ResourceLocation id) {
+        if (contains(VISIBLE_ATTRIBUTES.get(), id)) return false;
+        return contains(HIDDEN_ATTRIBUTES.get(), id);
+    }
+
+    public static boolean visibleOverride(ResourceLocation id) {
+        return contains(VISIBLE_ATTRIBUTES.get(), id);
+    }
+
+    public static Optional<String> categoryOverride(ResourceLocation id) {
+        for (String entry : ATTRIBUTE_CATEGORIES.get().split(";")) {
+            String[] parts = entry.trim().split("=", 2);
+            if (parts.length == 2 && parts[0].trim().equals(id.toString())) {
+                String category = parts[1].trim().toLowerCase(Locale.ROOT);
+                if (!category.isEmpty()) return Optional.of(category);
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static boolean contains(String configured, ResourceLocation id) {
+        for (String value : configured.split(",")) if (value.trim().equals(id.toString())) return true;
+        return false;
+    }
+}

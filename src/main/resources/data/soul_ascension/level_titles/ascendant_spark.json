@@ -1,0 +1,7 @@
+{
+  "name": "title.soul_ascension.ascendant_spark",
+  "description": "title.soul_ascension.ascendant_spark.description",
+  "icon": "soul_ascension:textures/gui/icons/title.png",
+  "order": 25,
+  "conditions": { "minimum_level": 25 }
+}

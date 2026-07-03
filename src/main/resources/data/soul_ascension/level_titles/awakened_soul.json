@@ -1,0 +1,7 @@
+{
+  "name": "title.soul_ascension.awakened_soul",
+  "description": "title.soul_ascension.awakened_soul.description",
+  "icon": "soul_ascension:textures/gui/icons/title.png",
+  "order": 1,
+  "conditions": { "minimum_level": 1 }
+}

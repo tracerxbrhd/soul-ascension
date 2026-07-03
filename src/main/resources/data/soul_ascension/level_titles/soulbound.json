@@ -1,0 +1,7 @@
+{
+  "name": "title.soul_ascension.soulbound",
+  "description": "title.soul_ascension.soulbound.description",
+  "icon": "soul_ascension:textures/gui/icons/title.png",
+  "order": 10,
+  "conditions": { "minimum_level": 10 }
+}
