@@ -1,6 +1,8 @@
 package dev.uapi.soulascension.progression;
 
 import dev.uapi.soulascension.config.SoulAscensionServerConfig;
+import dev.uapi.soulascension.item.WitheredMemoryPotionItem;
+import dev.uapi.soulascension.network.SoulAscensionNetwork;
 import dev.uapi.soulascension.data.DamageLedger;
 import dev.uapi.soulascension.data.SoulAscensionAttachments;
 import dev.uapi.soulascension.registry.SoulAscensionTags;
@@ -9,16 +11,23 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.item.alchemy.Potions;
+import net.minecraft.world.item.crafting.Ingredient;
 import dev.uapi.soulascension.title.TitleRegistry;
 import dev.uapi.soulascension.title.TitleService;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.OnDatapackSyncEvent;
+import net.neoforged.neoforge.event.brewing.RegisterBrewingRecipesEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.common.crafting.DataComponentIngredient;
 
 import java.util.Map;
 import java.util.UUID;
@@ -51,9 +60,11 @@ public final class SoulAscensionEvents {
     @SubscribeEvent
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            ProfilePrivacyService.ensureInitialized(player);
             SoulAscensionService.refreshRules(player);
             AttributeService.apply(player, SoulAscensionService.get(player));
             TitleService.evaluate(player);
+            SoulAscensionNetwork.syncRules(player);
         }
     }
 
@@ -95,8 +106,19 @@ public final class SoulAscensionEvents {
     @SubscribeEvent
     public static void onDatapackSync(OnDatapackSyncEvent event) {
         event.getRelevantPlayers().forEach(player -> {
-            TitleService.evaluate(player); TitleService.syncDefinitions(player);
+            TitleService.evaluate(player);
+            TitleService.syncDefinitions(player);
+            SoulAscensionNetwork.syncRules(player);
         });
+    }
+
+    @SubscribeEvent
+    public static void registerBrewingRecipe(RegisterBrewingRecipesEvent event) {
+        var longWeakness = PotionContents.createItemStack(Items.POTION, Potions.LONG_WEAKNESS);
+        Ingredient input = DataComponentIngredient.of(false, DataComponents.POTION_CONTENTS,
+            longWeakness.get(DataComponents.POTION_CONTENTS), Items.POTION);
+        event.getBuilder().addRecipe(input, Ingredient.of(Items.AMETHYST_SHARD),
+            WitheredMemoryPotionItem.createStack());
     }
 
     @SubscribeEvent

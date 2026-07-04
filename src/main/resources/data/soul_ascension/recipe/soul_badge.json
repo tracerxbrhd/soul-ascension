@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "#FG",
+    "o= "
+  ],
+  "key": {
+    "#": { "item": "minecraft:paper" },
+    "F": { "item": "minecraft:feather" },
+    "G": { "item": "minecraft:glow_ink_sac" },
+    "o": { "item": "minecraft:amethyst_shard" },
+    "=": { "item": "minecraft:iron_ingot" }
+  },
+  "result": {
+    "id": "soul_ascension:soul_badge",
+    "count": 1
+  }
+}

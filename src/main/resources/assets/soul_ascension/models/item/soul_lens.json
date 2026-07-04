@@ -1,0 +1,4 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": { "layer0": "soul_ascension:item/soul_lens" }
+}

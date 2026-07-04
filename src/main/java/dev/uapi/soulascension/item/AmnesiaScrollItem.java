@@ -1,6 +1,7 @@
 package dev.uapi.soulascension.item;
 
 import dev.uapi.soulascension.progression.SoulAscensionService;
+import dev.uapi.soulascension.network.ClientProgressionRules;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -15,6 +16,7 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 
 import java.util.List;
+import java.util.Locale;
 
 public final class AmnesiaScrollItem extends Item {
     public AmnesiaScrollItem(Properties properties) {
@@ -26,22 +28,27 @@ public final class AmnesiaScrollItem extends Item {
         ItemStack stack = player.getItemInHand(hand);
         if (level.isClientSide()) return InteractionResultHolder.sidedSuccess(stack, true);
         if (!(player instanceof ServerPlayer serverPlayer)) return InteractionResultHolder.fail(stack);
-        SoulAscensionService.ResetResult result = SoulAscensionService.resetWithAmnesiaScroll(serverPlayer);
+        SoulAscensionService.ResetResult result = SoulAscensionService.resetWithAmnesia(serverPlayer);
         if (!result.changed()) {
-            serverPlayer.sendSystemMessage(Component.translatable("message.soul_ascension.amnesia_nothing"));
             return InteractionResultHolder.fail(stack);
         }
         if (!player.getAbilities().instabuild) stack.shrink(1);
         level.playSound(null, player.blockPosition(), SoundEvents.BOOK_PAGE_TURN,
             SoundSource.PLAYERS, 1.0F, 0.75F);
-        serverPlayer.sendSystemMessage(Component.translatable("message.soul_ascension.amnesia_used",
-            result.refunded(), result.lost()));
         return InteractionResultHolder.consume(stack);
     }
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable("tooltip.soul_ascension.amnesia_scroll").withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("tooltip.soul_ascension.amnesia_scroll.loss").withStyle(ChatFormatting.DARK_PURPLE));
+        if (ClientProgressionRules.amnesiaPointLossEnabled()) {
+            tooltip.add(Component.translatable("tooltip.soul_ascension.amnesia_scroll.loss",
+                formatPercent(ClientProgressionRules.amnesiaPointLossPercent())).withStyle(ChatFormatting.DARK_PURPLE));
+        }
+    }
+
+    private static String formatPercent(double value) {
+        if (Math.abs(value - Math.rint(value)) < 1.0E-9) return String.format(Locale.ROOT, "%.0f", value);
+        return String.format(Locale.ROOT, "%.2f", value).replaceAll("0+$", "").replaceAll("\\.$", "");
     }
 }

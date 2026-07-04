@@ -1,0 +1,59 @@
+package dev.uapi.soulascension.progression;
+
+import dev.uapi.soulascension.data.PlayerProgress;
+import dev.uapi.soulascension.data.SoulAscensionAttachments;
+import dev.uapi.soulascension.network.PublicProfileData;
+import dev.uapi.soulascension.network.PublicProfilePayload;
+import dev.uapi.soulascension.title.TitleService;
+import net.minecraft.core.Holder;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.neoforged.neoforge.network.PacketDistributor;
+
+import java.util.ArrayList;
+import java.util.List;
+import com.mojang.authlib.properties.Property;
+import net.minecraft.network.chat.Component;
+
+public final class PublicProfileService {
+    private static final List<Holder<Attribute>> PUBLIC_ATTRIBUTES = List.of(
+        Attributes.ATTACK_DAMAGE,
+        Attributes.ATTACK_SPEED,
+        Attributes.MAX_HEALTH,
+        Attributes.ARMOR,
+        Attributes.ARMOR_TOUGHNESS,
+        Attributes.KNOCKBACK_RESISTANCE,
+        Attributes.MOVEMENT_SPEED,
+        Attributes.LUCK
+    );
+
+    private PublicProfileService() {}
+
+    public static void open(ServerPlayer viewer, ServerPlayer target) {
+        if (!ProfilePrivacyService.mayInspect(viewer, target)) {
+            viewer.displayClientMessage(Component.translatable("screen.soul_ascension.public_profile.hidden"), true);
+            return;
+        }
+        PacketDistributor.sendToPlayer(viewer, new PublicProfilePayload(snapshot(target)));
+    }
+
+    public static PublicProfileData snapshot(ServerPlayer target) {
+        PlayerProgress progress = target.getData(SoulAscensionAttachments.PROGRESS);
+        List<PublicProfileData.PublicAttribute> attributes = new ArrayList<>();
+        for (Holder<Attribute> holder : PUBLIC_ATTRIBUTES) {
+            AttributeInstance instance = target.getAttribute(holder);
+            ResourceLocation id = holder.unwrapKey().orElseThrow().location();
+            if (instance != null) attributes.add(new PublicProfileData.PublicAttribute(id, instance.getValue()));
+        }
+        Property texture = target.getGameProfile().getProperties().get("textures").stream().findFirst().orElse(null);
+        String skinValue = texture == null ? "" : texture.value();
+        String skinSignature = texture == null || !texture.hasSignature() ? "" : texture.signature();
+        return new PublicProfileData(target.getUUID(), target.getGameProfile().getName(),
+            skinValue, skinSignature,
+            progress.level(), TitleService.get(target).activeTitle(), progress.strength(), progress.endurance(),
+            progress.agility(), progress.intelligence(), progress.perception(), attributes);
+    }
+}

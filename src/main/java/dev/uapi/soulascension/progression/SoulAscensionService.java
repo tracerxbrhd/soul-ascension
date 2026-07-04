@@ -101,10 +101,10 @@ public final class SoulAscensionService {
         return true;
     }
 
-    public static ResetResult resetWithAmnesiaScroll(ServerPlayer player) {
+    public static ResetResult resetWithAmnesia(ServerPlayer player) {
         PlayerProgress old = get(player);
         int allocated = old.strength() + old.endurance() + old.agility() + old.intelligence() + old.perception();
-        if (!SoulAscensionServerConfig.ALLOW_RESET.get() || allocated <= 0)
+        if (!SoulAscensionServerConfig.ALLOW_RESET.get())
             return new ResetResult(false, allocated, 0, 0);
         int lost = SoulAscensionServerConfig.AMNESIA_POINT_LOSS_ENABLED.get()
             ? (int) Math.floor(allocated * SoulAscensionServerConfig.AMNESIA_POINT_LOSS_PERCENT.get() / 100.0)
@@ -115,6 +115,23 @@ public final class SoulAscensionService {
         AttributeService.apply(player, updated);
         TitleService.evaluate(player);
         return new ResetResult(true, allocated, allocated - lost, lost);
+    }
+
+    /** Altar/admin respec: preserves level and accumulated damage progress and refunds every allocated point. */
+    public static ResetResult respecWithoutLoss(ServerPlayer player) {
+        PlayerProgress old = get(player);
+        int allocated = old.strength() + old.endurance() + old.agility() + old.intelligence() + old.perception();
+        PlayerProgress updated = old.resetStats();
+        player.setData(SoulAscensionAttachments.PROGRESS, updated);
+        AttributeService.apply(player, updated);
+        TitleService.evaluate(player);
+        return new ResetResult(true, allocated, allocated, 0);
+    }
+
+    /** Compatibility alias for integrations compiled against 1.0.x. */
+    @Deprecated(forRemoval = false)
+    public static ResetResult resetWithAmnesiaScroll(ServerPlayer player) {
+        return resetWithAmnesia(player);
     }
 
     public static void addPoints(ServerPlayer player, int amount) {

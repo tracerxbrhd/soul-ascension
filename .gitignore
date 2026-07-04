@@ -31,3 +31,6 @@ crash-reports/
 *.bak
 Thumbs.db
 Desktop.ini
+
+# TEMP
+docs/item-texture-prompts.md

@@ -29,6 +29,34 @@ public final class SoulAscensionServerConfig {
     public static final ModConfigSpec.BooleanValue FULL_HEALTH_AFTER_RESPAWN;
     public static final ModConfigSpec.DoubleValue INTELLIGENCE_REWARD_XP_PERCENT;
     public static final ModConfigSpec.BooleanValue DEBUG_ITEMS_ENABLED;
+    public static final ModConfigSpec.BooleanValue ALTAR_ENABLED;
+    public static final ModConfigSpec.BooleanValue ALTAR_ALLOW_RESPEC;
+    public static final ModConfigSpec.BooleanValue ALTAR_RESPEC_CONFIRMATION;
+    public static final ModConfigSpec.ConfigValue<String> ALTAR_RESPEC_COST_TYPE;
+    public static final ModConfigSpec.IntValue ALTAR_RESPEC_COST_AMOUNT;
+    public static final ModConfigSpec.ConfigValue<String> ALTAR_RESPEC_COST_ITEM;
+    public static final ModConfigSpec.BooleanValue ALTAR_ALLOW_PROFILE_TOGGLE;
+    public static final ModConfigSpec.BooleanValue PROFILE_PRIVACY_ENABLED;
+    public static final ModConfigSpec.BooleanValue PROFILE_DEFAULT_HIDDEN;
+    public static final ModConfigSpec.BooleanValue HIDE_FROM_SOUL_LENS;
+    public static final ModConfigSpec.BooleanValue HIDE_FROM_BADGE_INSPECTION;
+    public static final ModConfigSpec.BooleanValue OPERATORS_BYPASS_HIDDEN;
+    public static final ModConfigSpec.BooleanValue CONCEALMENT_EMBLEM_ENABLED;
+    public static final ModConfigSpec.BooleanValue EMBLEM_CRAFTABLE;
+    public static final ModConfigSpec.BooleanValue EMBLEM_USE_CONSUMES_ITEM;
+    public static final ModConfigSpec.BooleanValue EMBLEM_USE_UNLOCKS_TOGGLE;
+    public static final ModConfigSpec.BooleanValue EMBLEM_USE_SETS_HIDDEN;
+    public static final ModConfigSpec.BooleanValue EMBLEM_DIRECT_USE_WITH_ACCESSORY;
+    public static final ModConfigSpec.BooleanValue ACCESSORIES_ENABLED;
+    public static final ModConfigSpec.BooleanValue PREFER_UAPI_ACCESSORY_SERVICE;
+    public static final ModConfigSpec.ConfigValue<String> CONCEALMENT_EMBLEM_SLOT;
+    public static final ModConfigSpec.BooleanValue SOUL_LENS_ENABLED;
+    public static final ModConfigSpec.DoubleValue SOUL_LENS_RANGE;
+    public static final ModConfigSpec.BooleanValue SOUL_LENS_REQUIRE_LINE_OF_SIGHT;
+    public static final ModConfigSpec.BooleanValue SOUL_LENS_RESPECT_HIDDEN;
+    public static final ModConfigSpec.BooleanValue SOUL_LENS_OPERATOR_BYPASS;
+    public static final ModConfigSpec.IntValue SOUL_LENS_UPDATE_INTERVAL;
+    public static final ModConfigSpec.BooleanValue SOUL_LENS_BLOCK_HOTBAR_SCROLL;
     public static final ModConfigSpec.ConfigValue<String> STRENGTH_MODIFIERS;
     public static final ModConfigSpec.ConfigValue<String> ENDURANCE_MODIFIERS;
     public static final ModConfigSpec.ConfigValue<String> AGILITY_MODIFIERS;
@@ -146,6 +174,53 @@ public final class SoulAscensionServerConfig {
             .define("fullHealthAfterRespawn", true);
         builder.pop();
 
+        builder.comment("Soul Altar gameplay and player-list presentation.").push("soul_altar");
+        ALTAR_ENABLED = builder.define("enabled", true);
+        ALTAR_ALLOW_RESPEC = builder.define("allow_respec", true);
+        ALTAR_RESPEC_CONFIRMATION = builder.define("respec_requires_confirmation", true);
+        ALTAR_RESPEC_COST_TYPE = builder.comment("Allowed: none, xp_levels, experience_points, item, disabled.")
+            .define("respec_cost_type", "none", SoulAscensionServerConfig::validRespecCostType);
+        ALTAR_RESPEC_COST_AMOUNT = builder.defineInRange("respec_cost_amount", 0, 0, 1_000_000);
+        ALTAR_RESPEC_COST_ITEM = builder.comment("Item id used when respec_cost_type=item.")
+            .define("respec_cost_item", "minecraft:amethyst_shard", SoulAscensionServerConfig::validResourceLocation);
+        ALTAR_ALLOW_PROFILE_TOGGLE = builder.define("allow_profile_visibility_toggle", true);
+        builder.pop();
+
+        builder.comment("Public profile privacy rules.").push("profile_privacy");
+        PROFILE_PRIVACY_ENABLED = builder.define("enabled", true);
+        PROFILE_DEFAULT_HIDDEN = builder.define("default_hidden", false);
+        HIDE_FROM_SOUL_LENS = builder.define("hide_from_soul_lens", true);
+        HIDE_FROM_BADGE_INSPECTION = builder.define("hide_from_soul_badge_inspection", true);
+        OPERATORS_BYPASS_HIDDEN = builder.define("operators_bypass_hidden_profiles", true);
+        builder.pop();
+
+        builder.comment("Emblem of Concealment behavior.").push("concealment_emblem");
+        CONCEALMENT_EMBLEM_ENABLED = builder.define("enabled", true);
+        EMBLEM_CRAFTABLE = builder.comment("Load the workbench recipe for the Emblem. Requires a datapack reload after changing.")
+            .define("craftable", true);
+        EMBLEM_USE_CONSUMES_ITEM = builder.define("use_consumes_item", true);
+        EMBLEM_USE_UNLOCKS_TOGGLE = builder.define("fallback_use_unlocks_visibility_toggle", true);
+        EMBLEM_USE_SETS_HIDDEN = builder.define("fallback_use_sets_hidden_immediately", true);
+        EMBLEM_DIRECT_USE_WITH_ACCESSORY = builder.define("allow_direct_use_when_accessory_mod_loaded", false);
+        builder.pop();
+
+        builder.comment("Loader-safe optional accessory integration through U-API.").push("integrations").push("accessories");
+        ACCESSORIES_ENABLED = builder.define("enabled", true);
+        PREFER_UAPI_ACCESSORY_SERVICE = builder.define("prefer_uapi_accessory_service", true);
+        CONCEALMENT_EMBLEM_SLOT = builder.define("concealment_emblem_slot", "charm",
+            value -> value instanceof String string && !string.isBlank() && string.length() <= 64);
+        builder.pop(2);
+
+        builder.comment("Soul Lens inspection and overlay rules.").push("soul_lens");
+        SOUL_LENS_ENABLED = builder.define("enabled", true);
+        SOUL_LENS_RANGE = builder.defineInRange("inspection_range", 64.0, 1.0, 256.0);
+        SOUL_LENS_REQUIRE_LINE_OF_SIGHT = builder.define("require_line_of_sight", true);
+        SOUL_LENS_RESPECT_HIDDEN = builder.define("hide_profiles_respected", true);
+        SOUL_LENS_OPERATOR_BYPASS = builder.define("operators_bypass_hidden_profiles", true);
+        SOUL_LENS_UPDATE_INTERVAL = builder.defineInRange("overlay_update_interval_ticks", 10, 1, 200);
+        SOUL_LENS_BLOCK_HOTBAR_SCROLL = builder.define("block_hotbar_scroll_while_using", true);
+        builder.pop();
+
         builder.comment("Development tools. Disable on public servers.").push("debug");
         DEBUG_ITEMS_ENABLED = builder.comment("Expose and enable SOUL ASCENSION debug items. Default: true.")
             .define("debugItemsEnabled", true);
@@ -161,6 +236,17 @@ public final class SoulAscensionServerConfig {
             case INTELLIGENCE -> INTELLIGENCE_MODIFIERS.get();
             case PERCEPTION -> PERCEPTION_MODIFIERS.get();
         };
+    }
+
+    private static boolean validRespecCostType(Object value) {
+        return value instanceof String string && switch (string.toLowerCase(java.util.Locale.ROOT)) {
+            case "none", "xp_levels", "experience_points", "item", "disabled" -> true;
+            default -> false;
+        };
+    }
+
+    private static boolean validResourceLocation(Object value) {
+        return value instanceof String string && net.minecraft.resources.ResourceLocation.tryParse(string) != null;
     }
 
     private SoulAscensionServerConfig() {}

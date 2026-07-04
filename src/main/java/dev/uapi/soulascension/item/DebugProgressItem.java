@@ -17,7 +17,7 @@ import net.minecraft.world.level.Level;
 import java.util.List;
 
 public final class DebugProgressItem extends Item {
-    public enum Action { LEVEL_UP, ADD_POINT, RESET }
+    public enum Action { LEVEL_UP, ADD_POINT }
     private final Action action;
 
     public DebugProgressItem(Action action, Properties properties) {
@@ -38,7 +38,6 @@ public final class DebugProgressItem extends Item {
                     Math.max(1.0, SoulAscensionService.requiredDamage(progress.level()) - progress.damageProgress()));
             }
             case ADD_POINT -> SoulAscensionService.addPoints(serverPlayer, 1);
-            case RESET -> SoulAscensionService.resetAll(serverPlayer);
         }
         return InteractionResultHolder.success(stack);
     }

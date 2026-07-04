@@ -29,6 +29,10 @@ public final class SoulAscensionAttachments {
         "title_counters", () -> AttachmentType.builder(TitleCounters::initial).serialize(TitleCounters.CODEC)
             .copyOnDeath().build());
 
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<ProfilePrivacyData>> PROFILE_PRIVACY = TYPES.register(
+        "profile_privacy", () -> AttachmentType.builder(ProfilePrivacyData::initial).serialize(ProfilePrivacyData.CODEC)
+            .copyOnDeath().sync((holder, player) -> holder == player, ProfilePrivacyData.STREAM_CODEC).build());
+
     private static final StreamCodec<RegistryFriendlyByteBuf, ResourceLocation> TITLE_ID_CODEC = new StreamCodec<>() {
         @Override public ResourceLocation decode(RegistryFriendlyByteBuf buffer) { return buffer.readResourceLocation(); }
         @Override public void encode(RegistryFriendlyByteBuf buffer, ResourceLocation value) { buffer.writeResourceLocation(value); }

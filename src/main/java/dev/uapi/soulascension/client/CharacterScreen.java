@@ -1,5 +1,7 @@
 package dev.uapi.soulascension.client;
 
+import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
 import dev.uapi.soulascension.SoulAscensionMod;
 import dev.uapi.client.UApiTabHost;
 import dev.uapi.soulascension.config.SoulAscensionClientConfig;
@@ -10,22 +12,28 @@ import dev.uapi.soulascension.data.Stat;
 import dev.uapi.soulascension.data.TitleProgress;
 import dev.uapi.soulascension.network.ClientTitleCatalog;
 import dev.uapi.soulascension.network.ClientTitleDefinition;
+import dev.uapi.soulascension.network.PublicProfileData;
 import dev.uapi.soulascension.network.SelectTitlePayload;
 import dev.uapi.soulascension.network.SpendStatPayload;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.PlayerFaceRenderer;
+import net.minecraft.client.resources.PlayerSkin;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Supplier;
 
 public final class CharacterScreen extends Screen implements UApiTabHost {
     private enum Page { ATTRIBUTES, TITLES, INTEGRATION }
@@ -67,6 +75,9 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
 
     private PlayerProgress progress = PlayerProgress.initial();
     private TitleProgress titles = TitleProgress.initial();
+    private final PublicProfileData publicProfile;
+    private final GameProfile snapshotProfile;
+    private final Supplier<PlayerSkin> snapshotSkin;
     private Page page = Page.ATTRIBUTES;
     private ResourceLocation integrationId;
     private int scroll;
@@ -78,12 +89,36 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
     private final FlatStatButton[] increaseButtons = new FlatStatButton[Stat.values().length];
     private final FlatStatButton[] decreaseButtons = new FlatStatButton[Stat.values().length];
 
-    public CharacterScreen() { super(Component.translatable("screen.soul_ascension.title")); }
+    public CharacterScreen() {
+        this(null);
+    }
+
+    public CharacterScreen(PublicProfileData publicProfile) {
+        super(Component.translatable(publicProfile == null
+            ? "screen.soul_ascension.title" : "screen.soul_ascension.public_profile"));
+        this.publicProfile = publicProfile;
+        if (publicProfile != null) {
+            snapshotProfile = new GameProfile(publicProfile.playerId(), publicProfile.playerName());
+            if (!publicProfile.skinValue().isEmpty()) {
+                Property texture = publicProfile.skinSignature().isEmpty()
+                    ? new Property("textures", publicProfile.skinValue())
+                    : new Property("textures", publicProfile.skinValue(), publicProfile.skinSignature());
+                snapshotProfile.getProperties().put("textures", texture);
+            }
+            snapshotSkin = Minecraft.getInstance().getSkinManager().lookupInsecure(snapshotProfile);
+            progress = new PlayerProgress(publicProfile.level(), 0, 0, 0, publicProfile.strength(),
+                publicProfile.endurance(), publicProfile.agility(), publicProfile.intelligence(),
+                publicProfile.perception());
+        } else {
+            snapshotProfile = null;
+            snapshotSkin = null;
+        }
+    }
 
     @Override
     protected void init() {
         refresh();
-        if (minecraft != null && minecraft.player != null) {
+        if (!isPublicProfile() && minecraft != null && minecraft.player != null) {
             attributeViewModel.forceRefresh();
             attributeViewModel.tick(minecraft.player, progress);
         }
@@ -93,18 +128,20 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
         int railStep = railSize + 4;
         int railX = left + panelWidth - railSize - 7;
         int railY = top + 40;
-        addRenderableWidget(new TextureIconButton(railX, railY, railSize, railSize, ATTRIBUTES_ICON,
-            Component.translatable("screen.soul_ascension.attributes"), () -> page == Page.ATTRIBUTES,
-            () -> switchPage(Page.ATTRIBUTES, null)));
-        addRenderableWidget(new TextureIconButton(railX, railY + railStep, railSize, railSize, TITLES_ICON,
-            Component.translatable("screen.soul_ascension.titles"), () -> page == Page.TITLES,
-            () -> switchPage(Page.TITLES, null)));
-        List<CharacterIntegrationRegistry.Tab> integrations = CharacterIntegrationRegistry.visibleTabs();
-        for (int i = 0; i < integrations.size(); i++) {
-            CharacterIntegrationRegistry.Tab tab = integrations.get(i);
-            addRenderableWidget(new TextureIconButton(railX, railY + railStep * (2 + i), railSize, railSize,
-                tab.icon(), tab.title(), () -> page == Page.INTEGRATION && tab.id().equals(integrationId),
-                () -> switchPage(Page.INTEGRATION, tab.id())));
+        if (!isPublicProfile()) {
+            addRenderableWidget(new TextureIconButton(railX, railY, railSize, railSize, ATTRIBUTES_ICON,
+                Component.translatable("screen.soul_ascension.attributes"), () -> page == Page.ATTRIBUTES,
+                () -> switchPage(Page.ATTRIBUTES, null)));
+            addRenderableWidget(new TextureIconButton(railX, railY + railStep, railSize, railSize, TITLES_ICON,
+                Component.translatable("screen.soul_ascension.titles"), () -> page == Page.TITLES,
+                () -> switchPage(Page.TITLES, null)));
+            List<CharacterIntegrationRegistry.Tab> integrations = CharacterIntegrationRegistry.visibleTabs();
+            for (int i = 0; i < integrations.size(); i++) {
+                CharacterIntegrationRegistry.Tab tab = integrations.get(i);
+                addRenderableWidget(new TextureIconButton(railX, railY + railStep * (2 + i), railSize, railSize,
+                    tab.icon(), tab.title(), () -> page == Page.INTEGRATION && tab.id().equals(integrationId),
+                    () -> switchPage(Page.INTEGRATION, tab.id())));
+            }
         }
 
         int rowHeight = statRowHeight();
@@ -115,7 +152,7 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
         int buttonsRight = rowRight - STAT_BUTTON_RIGHT_INSET;
         int plusX = buttonsRight - buttonSize;
         int minusX = plusX - buttonSize - STAT_CONTROL_GAP;
-        for (Stat stat : Stat.values()) {
+        for (Stat stat : isPublicProfile() ? new Stat[0] : Stat.values()) {
             int y = statY + stat.ordinal() * rowHeight;
             int buttonY = y + 4 - buttonSize / 2;
             FlatStatButton decrease = new FlatStatButton(minusX, buttonY, buttonSize, buttonSize,
@@ -139,6 +176,7 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
     }
 
     private void refresh() {
+        if (isPublicProfile()) return;
         LocalPlayer player = Minecraft.getInstance().player;
         if (player != null) {
             progress = player.getData(SoulAscensionAttachments.PROGRESS);
@@ -149,7 +187,8 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
 
     @Override public void tick() {
         refresh();
-        if (minecraft != null && minecraft.player != null) attributeViewModel.tick(minecraft.player, progress);
+        if (!isPublicProfile() && minecraft != null && minecraft.player != null)
+            attributeViewModel.tick(minecraft.player, progress);
     }
 
     @Override
@@ -165,13 +204,17 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
         renderCharacter(graphics, mouseX, mouseY, left + 7, top + 37, characterWidth - 11, panelHeight - 44);
         int contentX = left + characterWidth + 3;
         int contentY = top + 37;
-        int contentWidth = panelWidth - characterWidth - railReserve();
+        int contentWidth = panelWidth - characterWidth - contentReserve();
         int contentHeight = panelHeight - 44;
         drawSurface(graphics, INSET_SPRITE, contentX, contentY, contentWidth, contentHeight);
-        switch (page) {
-            case ATTRIBUTES -> renderAttributes(graphics, contentX, contentY, contentWidth, contentHeight);
-            case TITLES -> renderTitles(graphics, contentX, contentY, contentWidth, contentHeight);
-            case INTEGRATION -> renderIntegration(graphics, contentX, contentY, contentWidth, contentHeight);
+        if (isPublicProfile()) {
+            renderPublicAttributes(graphics, contentX, contentY, contentWidth, contentHeight);
+        } else {
+            switch (page) {
+                case ATTRIBUTES -> renderAttributes(graphics, contentX, contentY, contentWidth, contentHeight);
+                case TITLES -> renderTitles(graphics, contentX, contentY, contentWidth, contentHeight);
+                case INTEGRATION -> renderIntegration(graphics, contentX, contentY, contentWidth, contentHeight);
+            }
         }
         super.render(graphics, mouseX, mouseY, partialTick);
     }
@@ -179,9 +222,11 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
     private void renderCharacter(GuiGraphics graphics, int mouseX, int mouseY, int x, int y, int width, int height) {
         drawSurface(graphics, INSET_SPRITE, x, y, width, height);
         UiTheme theme = theme();
-        Component playerName = minecraft == null || minecraft.player == null ? Component.empty()
+        Component playerName = isPublicProfile() ? Component.literal(publicProfile.playerName())
+            : minecraft == null || minecraft.player == null ? Component.empty()
             : Component.literal(minecraft.player.getGameProfile().getName());
-        Component selectedTitle = ClientTitleCatalog.get(titles.activeTitle())
+        ResourceLocation titleId = isPublicProfile() ? publicProfile.activeTitle() : titles.activeTitle();
+        Component selectedTitle = ClientTitleCatalog.get(titleId)
             .<Component>map(value -> Component.translatable(value.nameKey())).orElse(Component.empty());
         boolean hasTitle = !selectedTitle.getString().isEmpty();
         int titleY = y + 8;
@@ -199,16 +244,32 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
         int availableModelHeight = Math.max(20, Math.min(125, statY - modelTop - 21));
         int modelWidth = Math.max(28, Math.min(88, (availableModelHeight * 3) / 4));
         int modelBottom = modelTop + availableModelHeight;
-        if (minecraft != null && minecraft.player != null) {
+        LivingEntity displayedPlayer = displayedPlayer();
+        if (displayedPlayer != null) {
             int modelScale = Math.max(12, Math.min(42, 12 + availableModelHeight / 4));
             int modelLeft = x + (width - modelWidth) / 2;
             InventoryScreen.renderEntityInInventoryFollowsMouse(graphics, modelLeft, modelTop,
-                modelLeft + modelWidth, modelBottom, modelScale, 0.0625F, mouseX, mouseY, minecraft.player);
+                modelLeft + modelWidth, modelBottom, modelScale, 0.0625F, mouseX, mouseY, displayedPlayer);
+        } else if (isPublicProfile() && snapshotSkin != null) {
+            int faceSize = Math.max(24, Math.min(48, availableModelHeight / 2));
+            PlayerFaceRenderer.draw(graphics, snapshotSkin.get(), x + (width - faceSize) / 2,
+                modelTop + Math.max(1, (availableModelHeight - faceSize) / 2 - 6), faceSize);
+            boolean online = minecraft != null && minecraft.getConnection() != null
+                && minecraft.getConnection().getPlayerInfo(publicProfile.playerId()) != null;
+            Component status = Component.translatable(online
+                ? "screen.soul_ascension.public_profile.out_of_range"
+                : "screen.soul_ascension.public_profile.offline");
+            graphics.drawCenteredString(font, trim(status, width - 16), x + width / 2,
+                modelBottom - 10, theme.mutedText());
         }
 
         int rowHeight = statRowHeight();
-        graphics.drawString(font, trim(Component.translatable("screen.soul_ascension.points", progress.unspentPoints()), width - 18),
-            x + 9, statY - Math.min(17, rowHeight), progress.unspentPoints() > 0 ? theme.accent() : theme.mutedText(), false);
+        if (!isPublicProfile()) {
+            graphics.drawString(font,
+                trim(Component.translatable("screen.soul_ascension.points", progress.unspentPoints()), width - 18),
+                x + 9, statY - Math.min(17, rowHeight),
+                progress.unspentPoints() > 0 ? theme.accent() : theme.mutedText(), false);
+        }
         for (Stat stat : Stat.values()) {
             int rowY = statY + stat.ordinal() * rowHeight;
             int rowX = x + STAT_ROW_INSET;
@@ -224,7 +285,34 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
             graphics.drawString(font, trim(name, Math.max(28, width - 105)), labelX, rowY, theme.text(), false);
             graphics.drawString(font, Integer.toString(progress.stat(stat)), x + width - 70, rowY, theme.positiveText(), false);
         }
-        renderProgressBar(graphics, x + 8, y + height - 19, width - 16);
+        if (isPublicProfile()) {
+            graphics.drawCenteredString(font, Component.translatable("screen.soul_ascension.read_only"),
+                x + width / 2, y + height - 15, theme.mutedText());
+        } else {
+            renderProgressBar(graphics, x + 8, y + height - 19, width - 16);
+        }
+    }
+
+    private void renderPublicAttributes(GuiGraphics graphics, int x, int y, int width, int height) {
+        UiTheme theme = theme();
+        graphics.drawString(font, Component.translatable("screen.soul_ascension.public_attributes"),
+            x + 10, y + 9, theme.text(), false);
+        graphics.fill(x + 10, y + 22, x + width - 10, y + 23, theme.divider());
+        int rowY = y + 30 - scroll;
+        graphics.enableScissor(x + 4, y + 25, x + width - 4, y + height - 4);
+        for (PublicProfileData.PublicAttribute attribute : publicProfile.attributes()) {
+            var holder = BuiltInRegistries.ATTRIBUTE.getHolder(attribute.id()).orElse(null);
+            if (holder == null) continue;
+            drawSurface(graphics, SECTION_SPRITE, x + 9, rowY, width - 18, 20);
+            Component name = Component.translatable(holder.value().getDescriptionId());
+            Component value = DynamicAttributeView.formatValue(attribute.id(), holder.value(), attribute.value());
+            graphics.drawString(font, trim(name, Math.max(30, width - 110)), x + 15, rowY + 6,
+                theme.text(), false);
+            graphics.drawString(font, value, x + width - 15 - font.width(value), rowY + 6,
+                theme.valueText(), false);
+            rowY += 23;
+        }
+        graphics.disableScissor();
     }
 
     private void renderAttributes(GuiGraphics graphics, int x, int y, int width, int height) {
@@ -390,9 +478,10 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (super.mouseClicked(mouseX, mouseY, button)) return true;
+        if (isPublicProfile()) return false;
         int contentX = panelLeft() + characterWidth() + 3;
         int contentY = panelTop() + 37;
-        int contentWidth = panelWidth() - characterWidth() - 39;
+        int contentWidth = panelWidth() - characterWidth() - contentReserve();
         int contentHeight = panelHeight() - 44;
         if (page == Page.ATTRIBUTES && button == 0) {
             for (AttributeHitbox hitbox : attributeHitboxes) if (hitbox.contains(mouseX, mouseY)) {
@@ -414,9 +503,14 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (isPublicProfile()) {
+            scroll = Math.max(0, Math.min(maxPublicAttributeScroll(),
+                scroll - (int) Math.signum(scrollY) * 18));
+            return true;
+        }
         if (page == Page.ATTRIBUTES) {
             int contentX = panelLeft() + characterWidth() + 3;
-            int contentWidth = panelWidth() - characterWidth() - railReserve();
+            int contentWidth = panelWidth() - characterWidth() - contentReserve();
             int listWidth = attributeListWidth(contentWidth);
             int amount = (int) Math.signum(scrollY) * 18;
             if (mouseX < contentX + 9 + listWidth + 4)
@@ -450,6 +544,7 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
     }
     private int railButtonSize() { return panelHeight() < 240 ? 18 : 24; }
     private int railReserve() { return railButtonSize() + 15; }
+    private int contentReserve() { return isPublicProfile() ? 11 : railReserve(); }
     private int attributeListWidth(int contentWidth) {
         int available = Math.max(40, contentWidth - 25);
         return Math.max(40, Math.min(190, available * 2 / 5));
@@ -481,7 +576,7 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
     }
 
     private void updateStatButtons() {
-        if (minecraft == null || minecraft.player == null) return;
+        if (isPublicProfile() || minecraft == null || minecraft.player == null) return;
         for (Stat stat : Stat.values()) {
             FlatStatButton increase = increaseButtons[stat.ordinal()];
             FlatStatButton decrease = decreaseButtons[stat.ordinal()];
@@ -524,7 +619,7 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
     }
 
     private int maxScroll() {
-        int contentWidth = panelWidth() - characterWidth() - railReserve();
+        int contentWidth = panelWidth() - characterWidth() - contentReserve();
         int contentHeight = panelHeight() - 44;
         if (page == Page.TITLES) {
             long count = ClientTitleCatalog.all().stream()
@@ -537,6 +632,10 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
             return Math.max(0, lines * 16 - Math.max(1, contentHeight - 34));
         }
         return 0;
+    }
+
+    private int maxPublicAttributeScroll() {
+        return Math.max(0, publicProfile.attributes().size() * 23 - Math.max(1, panelHeight() - 76));
     }
 
     private int maxAttributeListScroll() {
@@ -554,6 +653,16 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
     private net.minecraft.util.FormattedCharSequence trim(Component value, int maxWidth) {
         List<net.minecraft.util.FormattedCharSequence> lines = font.split(value, maxWidth);
         return lines.isEmpty() ? net.minecraft.util.FormattedCharSequence.EMPTY : lines.getFirst();
+    }
+
+    private boolean isPublicProfile() {
+        return publicProfile != null;
+    }
+
+    private LivingEntity displayedPlayer() {
+        if (minecraft == null) return null;
+        if (!isPublicProfile()) return minecraft.player;
+        return minecraft.level == null ? null : minecraft.level.getPlayerByUUID(publicProfile.playerId());
     }
 
     @Override public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {}

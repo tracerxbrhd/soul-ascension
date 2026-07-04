@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "oEo",
+    "#B#",
+    "#O#"
+  ],
+  "key": {
+    "o": { "item": "minecraft:amethyst_shard" },
+    "E": { "item": "minecraft:ender_eye" },
+    "B": { "item": "soul_ascension:soul_badge" },
+    "#": { "item": "minecraft:obsidian" },
+    "O": { "item": "minecraft:observer" }
+  },
+  "result": {
+    "id": "soul_ascension:soul_altar",
+    "count": 1
+  }
+}

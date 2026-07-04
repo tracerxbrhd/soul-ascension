@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.1.0 - 2026-07-04
+
+- Added the Soul Altar block, animated Eye of Ender renderer, configurable
+  respec, and persistent profile visibility controls.
+- Added the Emblem of Concealment, workbench recipe,
+  fallback activation, persistent privacy data, and optional Curios charm support through U-API.
+- Added the Soul Lens spyglass item with a non-blocking, scrollable public-build HUD overlay.
+- Replaced vanilla-gray Soul Altar controls with resource-pack-friendly Soul Ascension widgets
+  and removed the online-player list from the altar.
+- Fixed creative-tab potion stacks losing their potion contents and effects.
+- Made Amnesia Scroll and Potion of Withered Memory usable with empty allocations
+  and removed their reset chat spam.
+- Added cached skin snapshots and a 2D head fallback to public profiles.
+- Added the Soul Badge with a survival recipe, self-profile shortcut, and
+  server-authoritative read-only profiles for other players.
+- Added the Potion of Withered Memory, brewed from a long Potion of Weakness
+  with an amethyst shard, as an early survival stat-reset option.
+- Removed the redundant Origin Sigil (`debug_reset`).
+- Added server-synchronized Amnesia Scroll loss information.
+- Replaced the Soul Ascension item textures for the badge, potion, remaining
+  debug sigils, and rolled Amnesia Scroll.
+
 ## 1.0.1 - 2026-07-04
 
 - Fixed dynamic Attack Damage updates when Apotheosis/Apothic Attributes and

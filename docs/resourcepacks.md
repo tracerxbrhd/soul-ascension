@@ -40,3 +40,16 @@ These sprites are used only while the SOUL ASCENSION screen is open. Vanilla inv
 The NeoForge mod-list image is the root JAR resource `soul_ascension_banner.png`. Resource packs cannot reliably replace root metadata resources; replace it only in a repackaged mod JAR.
 
 `showAsResourcePack=true` is intentionally not enabled: mod assets are already loaded as client resources, while that flag would only add a redundant selectable pack entry.
+# Soul Altar and Emblem (1.1.0)
+
+The new gameplay assets use standard resource-pack paths:
+
+- `assets/soul_ascension/textures/block/soul_altar_top.png`
+- `assets/soul_ascension/textures/block/soul_altar_side.png`
+- `assets/soul_ascension/textures/block/soul_altar_bottom.png`
+- `assets/soul_ascension/textures/item/concealment_emblem.png`
+- `assets/soul_ascension/models/block/soul_altar.json`
+- `assets/soul_ascension/models/item/soul_altar.json`
+- `assets/soul_ascension/models/item/concealment_emblem.json`
+- `assets/soul_ascension/textures/item/soul_lens.png`
+- `assets/soul_ascension/models/item/soul_lens.json`
