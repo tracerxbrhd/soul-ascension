@@ -16,6 +16,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.neoforged.fml.ModList;
@@ -173,6 +174,8 @@ public final class AttributeViewModel {
 
     private static long fingerprint(net.minecraft.client.player.LocalPlayer player, PlayerProgress progress) {
         long value = progress.hashCode();
+        value = value * 31L + Double.doubleToLongBits(player.getAttributeValue(Attributes.ATTACK_DAMAGE));
+        value = value * 31L + Double.doubleToLongBits(player.getAttributeValue(Attributes.ATTACK_SPEED));
         for (EquipmentSlot slot : EquipmentSlot.values())
             value = value * 31L + ItemStack.hashItemAndComponents(player.getItemBySlot(slot));
         for (MobEffectInstance effect : player.getActiveEffects()) {

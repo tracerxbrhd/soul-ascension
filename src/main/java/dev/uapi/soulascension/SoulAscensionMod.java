@@ -12,6 +12,7 @@ import dev.uapi.soulascension.progression.SoulAscensionEvents;
 import dev.uapi.soulascension.progression.SoulAscensionService;
 import dev.uapi.soulascension.title.TitleReloadListener;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -43,6 +44,11 @@ public final class SoulAscensionMod {
         MOD_ID, "main", "itemGroup.soul_ascension", () -> AMNESIA_SCROLL.get().getDefaultInstance());
 
     public SoulAscensionMod(IEventBus modBus, ModContainer container) {
+        // Vanilla 1.21.1 does not synchronize attack damage to clients. The
+        // character screen needs the authoritative value without optional
+        // attribute mods being installed.
+        Attributes.ATTACK_DAMAGE.value().setSyncable(true);
+
         UApiCommandRegistry.registerSection("soulascension", SoulAscensionCommands::create);
         ITEMS.register(modBus);
         CREATIVE_TAB.add(id("amnesia_scroll"), 0);

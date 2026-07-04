@@ -5,7 +5,7 @@ Character progression mod providing damage-based levels, configurable attributes
 - Minecraft: 1.21.1
 - NeoForge: 21.1.234
 - Java: 21
-- Version: 1.0
+- Version: 1.0.1
 - Mod ID: `soul_ascension`
 - Required dependency: U-API 1.0 or newer
 
@@ -15,4 +15,4 @@ The attribute page uses a scrollable category list and a cached detail pane show
 
 Branding sources are stored in `docs/branding/`; runtime icon/banner assets are under `assets/soul_ascension/branding/`.
 
-Build on Windows with `gradlew.bat build`. The resulting artifact is `build/libs/soul-ascension-1.0.jar`.
+Build on Windows with `gradlew.bat build`. The resulting artifact is `build/libs/soul-ascension-1.0.1.jar`.
