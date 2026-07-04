@@ -14,6 +14,8 @@ import dev.uapi.soulascension.network.ClientTitleCatalog;
 import dev.uapi.soulascension.network.ClientTitleDefinition;
 import dev.uapi.soulascension.network.PublicProfileData;
 import dev.uapi.soulascension.network.SelectTitlePayload;
+import dev.uapi.soulascension.network.SoulAltarActionPayload;
+import dev.uapi.soulascension.network.SoulAltarOpenPayload;
 import dev.uapi.soulascension.network.SpendStatPayload;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -35,7 +37,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.function.Supplier;
 
-public final class CharacterScreen extends Screen implements UApiTabHost {
+public class CharacterScreen extends Screen implements UApiTabHost {
     private enum Page { ATTRIBUTES, TITLES, INTEGRATION }
     private record UiTheme(int backgroundOverlay, int text, int mutedText, int valueText,
                            int positiveText, int accent, int divider) {}
@@ -58,7 +60,6 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
     private static final ResourceLocation PROGRESS_BACKGROUND_SPRITE = SoulAscensionMod.id("character/progress_background");
     private static final ResourceLocation PROGRESS_FILL_SPRITE = SoulAscensionMod.id("character/progress_fill");
     private static final ResourceLocation STAT_PLUS_ICON = SoulAscensionMod.id("character/stat_plus");
-    private static final ResourceLocation STAT_MINUS_ICON = SoulAscensionMod.id("character/stat_minus");
     private static final ResourceLocation[] STAT_ICONS = {
         SoulAscensionMod.id("textures/gui/stats/strength.png"),
         SoulAscensionMod.id("textures/gui/stats/endurance.png"),
@@ -66,8 +67,9 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
         SoulAscensionMod.id("textures/gui/stats/intelligence.png"),
         SoulAscensionMod.id("textures/gui/stats/perception.png")
     };
-    private static final UiTheme THEME = new UiTheme(0xA8080612, 0xFFF1E9FF, 0xFF9B91AA,
-        0xFFD79BFF, 0xFFB9FFDB, 0xFFD66BFF, 0xFF8E4BC4);
+    private static final UiTheme THEME = new UiTheme(SoulUiTheme.BACKGROUND_OVERLAY, SoulUiTheme.TEXT,
+        SoulUiTheme.MUTED, SoulUiTheme.VALUE, SoulUiTheme.POSITIVE, SoulUiTheme.ACCENT, SoulUiTheme.DIVIDER);
+    private static final int ALTAR_CONTROLS_HEIGHT = 58;
     private static final int STAT_ROW_INSET = 6;
     private static final int STAT_ICON_INSET = 6;
     private static final int STAT_BUTTON_RIGHT_INSET = 8;
@@ -76,6 +78,9 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
     private PlayerProgress progress = PlayerProgress.initial();
     private TitleProgress titles = TitleProgress.initial();
     private final PublicProfileData publicProfile;
+    private final CharacterScreenMode mode;
+    private SoulAltarOpenPayload altarData;
+    private boolean confirmingRespec;
     private final GameProfile snapshotProfile;
     private final Supplier<PlayerSkin> snapshotSkin;
     private Page page = Page.ATTRIBUTES;
@@ -87,16 +92,24 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
     private final List<AttributeHitbox> attributeHitboxes = new ArrayList<>();
     private final AttributeViewModel attributeViewModel = new AttributeViewModel();
     private final FlatStatButton[] increaseButtons = new FlatStatButton[Stat.values().length];
-    private final FlatStatButton[] decreaseButtons = new FlatStatButton[Stat.values().length];
 
     public CharacterScreen() {
-        this(null);
+        this(CharacterScreenMode.NORMAL, null, null);
     }
 
     public CharacterScreen(PublicProfileData publicProfile) {
-        super(Component.translatable(publicProfile == null
-            ? "screen.soul_ascension.title" : "screen.soul_ascension.public_profile"));
+        this(publicProfile == null ? CharacterScreenMode.NORMAL : CharacterScreenMode.PUBLIC_VIEW,
+            publicProfile, null);
+    }
+
+    protected CharacterScreen(CharacterScreenMode mode, PublicProfileData publicProfile,
+                              SoulAltarOpenPayload altarData) {
+        super(Component.translatable(mode == CharacterScreenMode.SOUL_ALTAR
+            ? "screen.soul_ascension.soul_altar.title"
+            : publicProfile == null ? "screen.soul_ascension.title" : "screen.soul_ascension.public_profile"));
+        this.mode = mode;
         this.publicProfile = publicProfile;
+        this.altarData = altarData;
         if (publicProfile != null) {
             snapshotProfile = new GameProfile(publicProfile.playerId(), publicProfile.playerName());
             if (!publicProfile.skinValue().isEmpty()) {
@@ -151,22 +164,62 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
         int rowRight = left + characterWidth - 10;
         int buttonsRight = rowRight - STAT_BUTTON_RIGHT_INSET;
         int plusX = buttonsRight - buttonSize;
-        int minusX = plusX - buttonSize - STAT_CONTROL_GAP;
         for (Stat stat : isPublicProfile() ? new Stat[0] : Stat.values()) {
             int y = statY + stat.ordinal() * rowHeight;
             int buttonY = y + 4 - buttonSize / 2;
-            FlatStatButton decrease = new FlatStatButton(minusX, buttonY, buttonSize, buttonSize,
-                Component.literal("−"), STAT_MINUS_ICON, () -> {
-                    PacketDistributor.sendToServer(new SpendStatPayload(stat.ordinal(), -1));
-                });
             FlatStatButton increase = new FlatStatButton(plusX, buttonY, buttonSize, buttonSize,
                 Component.literal("+"), STAT_PLUS_ICON, () -> {
                     PacketDistributor.sendToServer(new SpendStatPayload(stat.ordinal(), 1));
                 });
-            decreaseButtons[stat.ordinal()] = addRenderableWidget(decrease);
             increaseButtons[stat.ordinal()] = addRenderableWidget(increase);
         }
+        if (isSoulAltar()) initAltarControls();
         updateStatButtons();
+    }
+
+    private void initAltarControls() {
+        if (altarData == null) return;
+        int x = contentX() + 6;
+        int y = contentY() + contentHeight() + 8;
+        int width = contentWidth() - 12;
+        if (confirmingRespec) {
+            int half = (width - 6) / 2;
+            addRenderableWidget(new SoulTextButton(x, y, half, 19,
+                Component.translatable("screen.soul_ascension.soul_altar.confirm_respec"), () ->
+                    sendAltarAction(SoulAltarActionPayload.RESPEC, false)));
+            addRenderableWidget(new SoulTextButton(x + half + 6, y, half, 19,
+                Component.translatable("gui.cancel"), () -> {
+                    confirmingRespec = false;
+                    rebuildWidgets();
+                }));
+            return;
+        }
+        int leftWidth = Math.max(100, width / 2 - 4);
+        SoulTextButton respec = new SoulTextButton(x, y, leftWidth, 19,
+            Component.translatable("screen.soul_ascension.soul_altar.respec"), () -> {
+                if (altarData.requireConfirmation()) {
+                    confirmingRespec = true;
+                    rebuildWidgets();
+                } else sendAltarAction(SoulAltarActionPayload.RESPEC, false);
+            });
+        respec.active = altarData.allowRespec();
+        respec.setTooltip(Tooltip.create(Component.translatable(
+            "screen.soul_ascension.soul_altar.respec_description")));
+        addRenderableWidget(respec);
+
+        SoulCheckbox visibility = new SoulCheckbox(x + leftWidth + 8, y, width - leftWidth - 8,
+            Component.translatable("screen.soul_ascension.soul_altar.hide_profile"),
+            () -> altarData != null && altarData.profileHidden(),
+            hidden -> sendAltarAction(SoulAltarActionPayload.SET_VISIBILITY, hidden));
+        visibility.active = altarData.canToggleVisibility();
+        visibility.setTooltip(Tooltip.create(Component.translatable(
+            "screen.soul_ascension.soul_altar.profile_hidden_hint")));
+        addRenderableWidget(visibility);
+    }
+
+    private void sendAltarAction(int action, boolean value) {
+        if (altarData == null) return;
+        PacketDistributor.sendToServer(new SoulAltarActionPayload(altarData.altarPos(), altarData.sessionId(), action, value));
     }
 
     private void switchPage(Page value, ResourceLocation integration) {
@@ -202,10 +255,10 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
         graphics.drawString(font, title, left + 12, top + 12, theme.text(), false);
 
         renderCharacter(graphics, mouseX, mouseY, left + 7, top + 37, characterWidth - 11, panelHeight - 44);
-        int contentX = left + characterWidth + 3;
-        int contentY = top + 37;
-        int contentWidth = panelWidth - characterWidth - contentReserve();
-        int contentHeight = panelHeight - 44;
+        int contentX = contentX();
+        int contentY = contentY();
+        int contentWidth = contentWidth();
+        int contentHeight = contentHeight();
         drawSurface(graphics, INSET_SPRITE, contentX, contentY, contentWidth, contentHeight);
         if (isPublicProfile()) {
             renderPublicAttributes(graphics, contentX, contentY, contentWidth, contentHeight);
@@ -216,7 +269,30 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
                 case INTEGRATION -> renderIntegration(graphics, contentX, contentY, contentWidth, contentHeight);
             }
         }
+        if (isSoulAltar()) renderAltarControls(graphics, contentX, contentY + contentHeight + 3, contentWidth,
+            ALTAR_CONTROLS_HEIGHT);
         super.render(graphics, mouseX, mouseY, partialTick);
+    }
+
+    private void renderAltarControls(GuiGraphics graphics, int x, int y, int width, int height) {
+        drawSurface(graphics, SECTION_SPRITE, x, y, width, height);
+        if (altarData == null) return;
+        UiTheme theme = theme();
+        if (confirmingRespec) {
+            graphics.drawCenteredString(font,
+                trim(Component.translatable("screen.soul_ascension.soul_altar.confirm_description"), width - 16),
+                x + width / 2, y + 35, theme.accent());
+            return;
+        }
+        Component cost = Component.translatable("screen.soul_ascension.soul_altar.cost." + altarData.costType(),
+            altarData.costAmount());
+        graphics.drawString(font, trim(cost, Math.max(40, width / 2 - 15)), x + 8, y + 32,
+            theme.mutedText(), false);
+        Component hint = altarData.effectiveHidden() && !altarData.profileHidden()
+            ? Component.translatable("screen.soul_ascension.soul_altar.concealment_forced")
+            : Component.translatable("screen.soul_ascension.soul_altar.profile_hidden_hint");
+        graphics.drawString(font, trim(hint, Math.max(40, width / 2 - 15)), x + width / 2 + 5, y + 32,
+            altarData.effectiveHidden() ? theme.accent() : theme.mutedText(), false);
     }
 
     private void renderCharacter(GuiGraphics graphics, int mouseX, int mouseY, int x, int y, int width, int height) {
@@ -479,10 +555,10 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (super.mouseClicked(mouseX, mouseY, button)) return true;
         if (isPublicProfile()) return false;
-        int contentX = panelLeft() + characterWidth() + 3;
-        int contentY = panelTop() + 37;
-        int contentWidth = panelWidth() - characterWidth() - contentReserve();
-        int contentHeight = panelHeight() - 44;
+        int contentX = contentX();
+        int contentY = contentY();
+        int contentWidth = contentWidth();
+        int contentHeight = contentHeight();
         if (page == Page.ATTRIBUTES && button == 0) {
             for (AttributeHitbox hitbox : attributeHitboxes) if (hitbox.contains(mouseX, mouseY)) {
                 attributeViewModel.select(hitbox.id());
@@ -509,8 +585,8 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
             return true;
         }
         if (page == Page.ATTRIBUTES) {
-            int contentX = panelLeft() + characterWidth() + 3;
-            int contentWidth = panelWidth() - characterWidth() - contentReserve();
+            int contentX = contentX();
+            int contentWidth = contentWidth();
             int listWidth = attributeListWidth(contentWidth);
             int amount = (int) Math.signum(scrollY) * 18;
             if (mouseX < contentX + 9 + listWidth + 4)
@@ -545,6 +621,12 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
     private int railButtonSize() { return panelHeight() < 240 ? 18 : 24; }
     private int railReserve() { return railButtonSize() + 15; }
     private int contentReserve() { return isPublicProfile() ? 11 : railReserve(); }
+    private int contentX() { return panelLeft() + characterWidth() + 3; }
+    private int contentY() { return panelTop() + 37; }
+    private int contentWidth() { return panelWidth() - characterWidth() - contentReserve(); }
+    private int contentHeight() {
+        return panelHeight() - 44 - (isSoulAltar() ? ALTAR_CONTROLS_HEIGHT + 3 : 0);
+    }
     private int attributeListWidth(int contentWidth) {
         int available = Math.max(40, contentWidth - 25);
         return Math.max(40, Math.min(190, available * 2 / 5));
@@ -579,23 +661,17 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
         if (isPublicProfile() || minecraft == null || minecraft.player == null) return;
         for (Stat stat : Stat.values()) {
             FlatStatButton increase = increaseButtons[stat.ordinal()];
-            FlatStatButton decrease = decreaseButtons[stat.ordinal()];
             if (increase != null) {
                 int maximum = SoulAscensionServerConfig.MAX_POINTS_PER_STAT.get();
                 boolean limited = SoulAscensionServerConfig.LIMIT_STAT_POINTS.get() && maximum > 0;
                 increase.active = progress.unspentPoints() > 0 && (!limited || progress.stat(stat) < maximum);
                 increase.setTooltip(Tooltip.create(adjustmentTooltip(stat, 1)));
             }
-            if (decrease != null) {
-                decrease.active = SoulAscensionServerConfig.ALLOW_STAT_DECREASE.get() && progress.stat(stat) > 0;
-                decrease.setTooltip(Tooltip.create(adjustmentTooltip(stat, -1)));
-            }
         }
     }
 
     private Component adjustmentTooltip(Stat stat, int delta) {
         if (delta > 0 && progress.unspentPoints() <= 0) return Component.translatable("screen.soul_ascension.no_free_points");
-        if (delta < 0 && progress.stat(stat) <= 0) return Component.translatable("screen.soul_ascension.no_allocated_points");
         int maximum = SoulAscensionServerConfig.MAX_POINTS_PER_STAT.get();
         if (delta > 0 && SoulAscensionServerConfig.LIMIT_STAT_POINTS.get()
             && maximum > 0 && progress.stat(stat) >= maximum)
@@ -619,8 +695,7 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
     }
 
     private int maxScroll() {
-        int contentWidth = panelWidth() - characterWidth() - contentReserve();
-        int contentHeight = panelHeight() - 44;
+        int contentHeight = contentHeight();
         if (page == Page.TITLES) {
             long count = ClientTitleCatalog.all().stream()
                 .filter(value -> !value.hidden() || titles.unlocked().contains(value.id())).count();
@@ -640,14 +715,14 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
 
     private int maxAttributeListScroll() {
         int rows = attributeViewModel.groups().stream().mapToInt(group -> 18 + group.entries().size() * 16).sum();
-        return Math.max(0, rows - Math.max(1, panelHeight() - 85));
+        return Math.max(0, rows - Math.max(1, contentHeight() - 41));
     }
 
     private int maxAttributeDetailScroll() {
         AttributeViewModel.DisplayEntry entry = attributeViewModel.selected().orElse(null);
         if (entry == null) return 0;
         int estimated = 105 + entry.sources().size() * 24;
-        return Math.max(0, estimated - Math.max(1, panelHeight() - 85));
+        return Math.max(0, estimated - Math.max(1, contentHeight() - 41));
     }
 
     private net.minecraft.util.FormattedCharSequence trim(Component value, int maxWidth) {
@@ -656,7 +731,19 @@ public final class CharacterScreen extends Screen implements UApiTabHost {
     }
 
     private boolean isPublicProfile() {
-        return publicProfile != null;
+        return mode == CharacterScreenMode.PUBLIC_VIEW;
+    }
+
+    private boolean isSoulAltar() {
+        return mode == CharacterScreenMode.SOUL_ALTAR;
+    }
+
+    protected final void updateAltarData(SoulAltarOpenPayload data) {
+        if (!isSoulAltar()) return;
+        altarData = data;
+        confirmingRespec = false;
+        refresh();
+        rebuildWidgets();
     }
 
     private LivingEntity displayedPlayer() {

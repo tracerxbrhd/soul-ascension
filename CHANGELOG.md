@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.1 - 2026-07-04
+
+- Rebuilt Soul Altar as an authenticated Character Screen mode with shared character, stats, title, progress, and attribute panels.
+- Restricted respec to a short-lived server-issued Soul Altar session; normal and public character screens can no longer decrease stats.
+- Unified profile privacy checks for Soul Badge and Soul Lens and documented operator bypass behavior for integrated-server testing.
+- Reworked Soul Lens stats into equal full-width rows and added configurable idle, active, and hidden-profile opacity.
+
 ## 1.1.0 - 2026-07-04
 
 - Added the Soul Altar block, animated Eye of Ender renderer, configurable

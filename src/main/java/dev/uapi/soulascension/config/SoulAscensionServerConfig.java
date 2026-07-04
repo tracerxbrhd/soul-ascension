@@ -54,9 +54,12 @@ public final class SoulAscensionServerConfig {
     public static final ModConfigSpec.DoubleValue SOUL_LENS_RANGE;
     public static final ModConfigSpec.BooleanValue SOUL_LENS_REQUIRE_LINE_OF_SIGHT;
     public static final ModConfigSpec.BooleanValue SOUL_LENS_RESPECT_HIDDEN;
-    public static final ModConfigSpec.BooleanValue SOUL_LENS_OPERATOR_BYPASS;
     public static final ModConfigSpec.IntValue SOUL_LENS_UPDATE_INTERVAL;
     public static final ModConfigSpec.BooleanValue SOUL_LENS_BLOCK_HOTBAR_SCROLL;
+    public static final ModConfigSpec.DoubleValue SOUL_LENS_IDLE_OVERLAY_OPACITY;
+    public static final ModConfigSpec.DoubleValue SOUL_LENS_ACTIVE_OVERLAY_OPACITY;
+    public static final ModConfigSpec.DoubleValue SOUL_LENS_HIDDEN_OVERLAY_OPACITY;
+    public static final ModConfigSpec.BooleanValue SOUL_LENS_SHOW_IDLE_HINT;
     public static final ModConfigSpec.ConfigValue<String> STRENGTH_MODIFIERS;
     public static final ModConfigSpec.ConfigValue<String> ENDURANCE_MODIFIERS;
     public static final ModConfigSpec.ConfigValue<String> AGILITY_MODIFIERS;
@@ -93,7 +96,9 @@ public final class SoulAscensionServerConfig {
         MAX_POINTS_PER_STAT = builder.comment(
             "Maximum allocated points per stat when limitStatPoints is enabled. Default: 100; 0 is unlimited.")
             .defineInRange("maxPointsPerStat", 100, 0, 1_000_000);
-        ALLOW_STAT_DECREASE = builder.comment("Allow players/admin commands to decrease allocated stats. Default: true.")
+        ALLOW_STAT_DECREASE = builder.comment(
+            "Allow permission-level 2 administrative commands to decrease allocated stats. Default: true.",
+            "Normal character screens never expose stat decrease; player respec is available only through Soul Altar.")
             .define("allowStatDecrease", true);
         REFUND_DECREASED_POINTS = builder.comment("Return a point when a stat is decreased. Default: true.")
             .define("refundDecreasedStatPoints", true);
@@ -174,7 +179,7 @@ public final class SoulAscensionServerConfig {
             .define("fullHealthAfterRespawn", true);
         builder.pop();
 
-        builder.comment("Soul Altar gameplay and player-list presentation.").push("soul_altar");
+        builder.comment("Soul Altar gameplay and character-screen actions.").push("soul_altar");
         ALTAR_ENABLED = builder.define("enabled", true);
         ALTAR_ALLOW_RESPEC = builder.define("allow_respec", true);
         ALTAR_RESPEC_CONFIRMATION = builder.define("respec_requires_confirmation", true);
@@ -191,7 +196,10 @@ public final class SoulAscensionServerConfig {
         PROFILE_DEFAULT_HIDDEN = builder.define("default_hidden", false);
         HIDE_FROM_SOUL_LENS = builder.define("hide_from_soul_lens", true);
         HIDE_FROM_BADGE_INSPECTION = builder.define("hide_from_soul_badge_inspection", true);
-        OPERATORS_BYPASS_HIDDEN = builder.define("operators_bypass_hidden_profiles", true);
+        OPERATORS_BYPASS_HIDDEN = builder.comment(
+            "Allow permission-level 2 operators to inspect hidden profiles.",
+            "Singleplayer/integrated-server owners normally have this permission; set false when testing privacy locally.")
+            .define("operators_bypass_hidden_profiles", true);
         builder.pop();
 
         builder.comment("Emblem of Concealment behavior.").push("concealment_emblem");
@@ -216,9 +224,14 @@ public final class SoulAscensionServerConfig {
         SOUL_LENS_RANGE = builder.defineInRange("inspection_range", 64.0, 1.0, 256.0);
         SOUL_LENS_REQUIRE_LINE_OF_SIGHT = builder.define("require_line_of_sight", true);
         SOUL_LENS_RESPECT_HIDDEN = builder.define("hide_profiles_respected", true);
-        SOUL_LENS_OPERATOR_BYPASS = builder.define("operators_bypass_hidden_profiles", true);
         SOUL_LENS_UPDATE_INTERVAL = builder.defineInRange("overlay_update_interval_ticks", 10, 1, 200);
         SOUL_LENS_BLOCK_HOTBAR_SCROLL = builder.define("block_hotbar_scroll_while_using", true);
+        builder.comment("Soul Lens HUD presentation. Opacity values are clamped to 0.0..1.0.").push("ui");
+        SOUL_LENS_IDLE_OVERLAY_OPACITY = builder.defineInRange("idle_overlay_opacity", 0.25, 0.0, 1.0);
+        SOUL_LENS_ACTIVE_OVERLAY_OPACITY = builder.defineInRange("active_overlay_opacity", 0.85, 0.0, 1.0);
+        SOUL_LENS_HIDDEN_OVERLAY_OPACITY = builder.defineInRange("hidden_profile_overlay_opacity", 0.75, 0.0, 1.0);
+        SOUL_LENS_SHOW_IDLE_HINT = builder.define("show_idle_hint", true);
+        builder.pop();
         builder.pop();
 
         builder.comment("Development tools. Disable on public servers.").push("debug");

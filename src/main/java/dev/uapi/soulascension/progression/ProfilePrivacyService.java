@@ -8,6 +8,8 @@ import dev.uapi.soulascension.data.SoulAscensionAttachments;
 import net.minecraft.server.level.ServerPlayer;
 
 public final class ProfilePrivacyService {
+    public enum InspectionChannel { SOUL_BADGE, SOUL_LENS }
+
     private ProfilePrivacyService() {}
 
     public static ProfilePrivacyData get(ServerPlayer player) {
@@ -35,13 +37,22 @@ public final class ProfilePrivacyService {
         return get(player).profileHidden() || hasEquippedEmblem(player);
     }
 
+    public static boolean isProfileHidden(ServerPlayer player) {
+        return isEffectivelyHidden(player);
+    }
+
+    public static boolean getManualProfileHidden(ServerPlayer player) {
+        return get(player).profileHidden();
+    }
+
+    public static boolean hasConcealmentEffect(ServerPlayer player) {
+        return hasEquippedEmblem(player);
+    }
+
     public static boolean canToggle(ServerPlayer player) {
         if (!SoulAscensionServerConfig.PROFILE_PRIVACY_ENABLED.get()
             || !SoulAscensionServerConfig.ALTAR_ALLOW_PROFILE_TOGGLE.get()) return false;
-        ProfilePrivacyData privacy = get(player);
-        // A hidden player must always be able to make the profile visible again,
-        // even when the original concealment item is no longer present.
-        return privacy.profileHidden() || privacy.concealmentUnlocked() || hasEquippedEmblem(player);
+        return true;
     }
 
     public static boolean setHidden(ServerPlayer player, boolean hidden) {
@@ -50,25 +61,32 @@ public final class ProfilePrivacyService {
         return true;
     }
 
+    public static boolean setProfileHidden(ServerPlayer player, boolean hidden) {
+        return setHidden(player, hidden);
+    }
+
     public static void activateEmblem(ServerPlayer player, boolean unlockToggle, boolean setHidden) {
         player.setData(SoulAscensionAttachments.PROFILE_PRIVACY,
             get(player).activateEmblem(unlockToggle, setHidden));
     }
 
     public static boolean mayInspect(ServerPlayer viewer, ServerPlayer target) {
-        if (viewer == target) return true;
-        if (!SoulAscensionServerConfig.PROFILE_PRIVACY_ENABLED.get()
-            || !SoulAscensionServerConfig.HIDE_FROM_BADGE_INSPECTION.get()) return true;
-        if (!isEffectivelyHidden(target)) return true;
-        return SoulAscensionServerConfig.OPERATORS_BYPASS_HIDDEN.get() && viewer.hasPermissions(2);
+        return canInspectProfile(viewer, target, InspectionChannel.SOUL_BADGE);
     }
 
     public static boolean mayInspectWithLens(ServerPlayer viewer, ServerPlayer target) {
+        return canInspectProfile(viewer, target, InspectionChannel.SOUL_LENS);
+    }
+
+    public static boolean canInspectProfile(ServerPlayer viewer, ServerPlayer target, InspectionChannel channel) {
         if (viewer == target) return true;
-        if (!SoulAscensionServerConfig.PROFILE_PRIVACY_ENABLED.get()
-            || !SoulAscensionServerConfig.SOUL_LENS_RESPECT_HIDDEN.get()
-            || !SoulAscensionServerConfig.HIDE_FROM_SOUL_LENS.get()) return true;
-        if (!isEffectivelyHidden(target)) return true;
-        return SoulAscensionServerConfig.SOUL_LENS_OPERATOR_BYPASS.get() && viewer.hasPermissions(2);
+        if (!SoulAscensionServerConfig.PROFILE_PRIVACY_ENABLED.get()) return true;
+        boolean privacyApplies = switch (channel) {
+            case SOUL_BADGE -> SoulAscensionServerConfig.HIDE_FROM_BADGE_INSPECTION.get();
+            case SOUL_LENS -> SoulAscensionServerConfig.SOUL_LENS_RESPECT_HIDDEN.get()
+                && SoulAscensionServerConfig.HIDE_FROM_SOUL_LENS.get();
+        };
+        if (!privacyApplies || !isProfileHidden(target)) return true;
+        return SoulAscensionServerConfig.OPERATORS_BYPASS_HIDDEN.get() && viewer.hasPermissions(2);
     }
 }

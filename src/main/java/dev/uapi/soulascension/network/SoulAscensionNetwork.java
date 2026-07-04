@@ -17,12 +17,12 @@ public final class SoulAscensionNetwork {
     private SoulAscensionNetwork() {}
 
     public static void register(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("5");
+        var registrar = event.registrar("6");
         registrar.playToServer(SpendStatPayload.TYPE, SpendStatPayload.STREAM_CODEC, (payload, context) -> {
             if (!(context.player() instanceof ServerPlayer player)) return;
             if (payload.statOrdinal() >= 0 && payload.statOrdinal() < Stat.values().length
-                && (payload.delta() == 1 || payload.delta() == -1)) {
-                SoulAscensionService.changeStat(player, Stat.values()[payload.statOrdinal()], payload.delta());
+                && payload.delta() == 1) {
+                SoulAscensionService.changeStat(player, Stat.values()[payload.statOrdinal()], 1);
             }
         });
         registrar.playToServer(SelectTitlePayload.TYPE, SelectTitlePayload.STREAM_CODEC, (payload, context) -> {
@@ -38,7 +38,7 @@ public final class SoulAscensionNetwork {
             (payload, context) -> ClientSoulAltarHandler.open(payload));
         registrar.playToServer(SoulAltarActionPayload.TYPE, SoulAltarActionPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player)
-                SoulAltarService.handleAction(player, payload.altarPos(), payload.action(), payload.value());
+                SoulAltarService.handleAction(player, payload.altarPos(), payload.sessionId(), payload.action(), payload.value());
         });
         registrar.playToServer(SoulLensRequestPayload.TYPE, SoulLensRequestPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) SoulLensService.inspect(player, payload.targetId());
@@ -53,6 +53,10 @@ public final class SoulAscensionNetwork {
             SoulAscensionServerConfig.AMNESIA_POINT_LOSS_PERCENT.get(),
             SoulAscensionServerConfig.SOUL_LENS_ENABLED.get(), SoulAscensionServerConfig.SOUL_LENS_RANGE.get(),
             SoulAscensionServerConfig.SOUL_LENS_UPDATE_INTERVAL.get(),
-            SoulAscensionServerConfig.SOUL_LENS_BLOCK_HOTBAR_SCROLL.get()));
+            SoulAscensionServerConfig.SOUL_LENS_BLOCK_HOTBAR_SCROLL.get(),
+            SoulAscensionServerConfig.SOUL_LENS_IDLE_OVERLAY_OPACITY.get(),
+            SoulAscensionServerConfig.SOUL_LENS_ACTIVE_OVERLAY_OPACITY.get(),
+            SoulAscensionServerConfig.SOUL_LENS_HIDDEN_OVERLAY_OPACITY.get(),
+            SoulAscensionServerConfig.SOUL_LENS_SHOW_IDLE_HINT.get()));
     }
 }

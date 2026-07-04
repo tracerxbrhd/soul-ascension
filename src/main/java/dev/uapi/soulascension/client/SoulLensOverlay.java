@@ -1,5 +1,6 @@
 package dev.uapi.soulascension.client;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import dev.uapi.soulascension.SoulAscensionMod;
 import dev.uapi.soulascension.network.ClientProgressionRules;
 import dev.uapi.soulascension.network.ClientTitleCatalog;
@@ -29,13 +30,12 @@ public final class SoulLensOverlay {
     private static final ResourceLocation PANEL = SoulAscensionMod.id("character/panel");
     private static final ResourceLocation INSET = SoulAscensionMod.id("character/inset");
     private static final ResourceLocation SECTION = SoulAscensionMod.id("character/section");
-    private static final int TEXT = 0xFFF1E9FF;
-    private static final int MUTED = 0xFF9B91AA;
-    private static final int VALUE = 0xFFD79BFF;
-    private static final int ACCENT = 0xFFD66BFF;
-    private static final int DIVIDER = 0xFF8E4BC4;
     private static final int NO_TARGET = -2;
     private static final int LOADING = -1;
+    private static final int STAT_ROW_HEIGHT = 17;
+    private static final int STAT_COUNT = 5;
+    private static final int ACTIVE_CONTENT_TOP = 43;
+    private static final int ATTRIBUTE_CLIP_OFFSET = 151;
     private static UUID targetId;
     private static int status = NO_TARGET;
     private static PublicProfileData profile;
@@ -82,81 +82,100 @@ public final class SoulLensOverlay {
 
     public static boolean handleScroll(double delta) {
         if (!isUsing(Minecraft.getInstance().player) || !ClientProgressionRules.soulLensBlockHotbarScroll()) return false;
-        if (profile != null) {
-            scroll = Math.max(0, Math.min(maxScroll(), scroll - (int)Math.signum(delta) * 18));
-        }
+        if (profile != null)
+            scroll = Math.max(0, Math.min(maxScroll(), scroll - (int) Math.signum(delta) * 18));
         return true;
     }
 
     public static void render(GuiGraphics graphics) {
         Minecraft minecraft = Minecraft.getInstance();
         if (!isUsing(minecraft.player) || minecraft.options.hideGui) return;
-        int width = Math.min(270, Math.max(190, graphics.guiWidth() / 3));
-        int height = Math.min(320, Math.max(150, graphics.guiHeight() - 52));
-        int x = 12, y = (graphics.guiHeight() - height) / 2;
-        graphics.blitSprite(PANEL, x, y, width, height);
+        if (status == NO_TARGET && !ClientProgressionRules.soulLensShowIdleHint()) return;
+
+        boolean active = status == SoulLensProfilePayload.VISIBLE && profile != null;
+        double opacity = active ? ClientProgressionRules.soulLensActiveOverlayOpacity()
+            : status == SoulLensProfilePayload.HIDDEN ? ClientProgressionRules.soulLensHiddenOverlayOpacity()
+            : ClientProgressionRules.soulLensIdleOverlayOpacity();
+        int width = active ? Math.min(270, Math.max(210, graphics.guiWidth() / 3))
+            : Math.min(250, Math.max(180, graphics.guiWidth() / 4));
+        int height = active ? activeHeight(graphics.guiHeight()) : status == NO_TARGET ? 64 : 78;
+        int x = 12;
+        int y = Math.max(8, (graphics.guiHeight() - height) / 2);
+
+        blit(graphics, PANEL, x, y, width, height, opacity);
         graphics.drawString(minecraft.font, Component.translatable("overlay.soul_ascension.soul_lens.title"),
-            x + 11, y + 11, TEXT, false);
-        graphics.fill(x + 9, y + 29, x + width - 9, y + 30, DIVIDER);
-        graphics.blitSprite(INSET, x + 8, y + 37, width - 16, height - 45);
+            x + 11, y + 11, color(SoulUiTheme.TEXT, opacity), false);
+        graphics.fill(x + 9, y + 29, x + width - 9, y + 30, color(SoulUiTheme.DIVIDER, opacity));
+        blit(graphics, INSET, x + 8, y + 37, width - 16, height - 45, opacity);
 
         Component state = stateMessage();
         if (state != null) {
-            graphics.drawCenteredString(minecraft.font, state, x + width / 2, y + height / 2 - 4,
-                status == SoulLensProfilePayload.HIDDEN ? ACCENT : MUTED);
+            int messageColor = status == SoulLensProfilePayload.HIDDEN ? SoulUiTheme.ACCENT : SoulUiTheme.MUTED;
+            List<net.minecraft.util.FormattedCharSequence> lines = minecraft.font.split(state, width - 28);
+            int lineY = y + 44 + Math.max(0, (height - 51 - lines.size() * 10) / 2);
+            for (var line : lines) {
+                graphics.drawCenteredString(minecraft.font, line, x + width / 2, lineY, color(messageColor, opacity));
+                lineY += 10;
+            }
             return;
         }
-        renderProfile(graphics, minecraft, x + 13, y + 43, width - 26, height - 53);
+        renderProfile(graphics, minecraft, x + 13, y + ACTIVE_CONTENT_TOP, width - 26,
+            height - ACTIVE_CONTENT_TOP - 10, opacity);
     }
 
-    private static void renderProfile(GuiGraphics graphics, Minecraft minecraft, int x, int y, int width, int height) {
+    private static void renderProfile(GuiGraphics graphics, Minecraft minecraft, int x, int y, int width,
+                                      int height, double opacity) {
         Component title = ClientTitleCatalog.get(profile.activeTitle())
             .<Component>map(value -> Component.translatable(value.nameKey())).orElse(Component.empty());
         if (!title.getString().isEmpty())
-            graphics.drawCenteredString(minecraft.font, title, x + width / 2, y + 3, ACCENT);
-        graphics.drawCenteredString(minecraft.font, Component.literal(profile.playerName()), x + width / 2, y + 15, TEXT);
+            graphics.drawCenteredString(minecraft.font, title, x + width / 2, y + 3,
+                color(SoulUiTheme.ACCENT, opacity));
+        graphics.drawCenteredString(minecraft.font, Component.literal(profile.playerName()), x + width / 2, y + 15,
+            color(SoulUiTheme.TEXT, opacity));
         graphics.drawCenteredString(minecraft.font, Component.translatable("screen.soul_ascension.level", profile.level()),
-            x + width / 2, y + 27, MUTED);
-        graphics.fill(x + 5, y + 40, x + width - 5, y + 41, DIVIDER);
+            x + width / 2, y + 27, color(SoulUiTheme.MUTED, opacity));
+        graphics.fill(x + 5, y + 40, x + width - 5, y + 41, color(SoulUiTheme.DIVIDER, opacity));
 
         String[] names = {"strength", "endurance", "agility", "intelligence", "perception"};
-        int[] values = {profile.strength(), profile.endurance(), profile.agility(), profile.intelligence(), profile.perception()};
+        int[] values = {profile.strength(), profile.endurance(), profile.agility(), profile.intelligence(),
+            profile.perception()};
         int statY = y + 46;
         for (int index = 0; index < names.length; index++) {
-            int column = index % 2;
-            int row = index / 2;
-            int cellX = x + column * width / 2;
-            int cellWidth = index == 4 ? width : width / 2 - 2;
-            graphics.blitSprite(SECTION, cellX, statY + row * 17, cellWidth, 15);
+            int rowY = statY + index * STAT_ROW_HEIGHT;
+            blit(graphics, SECTION, x, rowY, width, 15, opacity);
             Component name = Component.translatable("stat.soul_ascension.short." + names[index]);
-            graphics.drawString(minecraft.font, name, cellX + 4, statY + row * 17 + 3, TEXT, false);
-            graphics.drawString(minecraft.font, Integer.toString(values[index]),
-                cellX + cellWidth - 5 - minecraft.font.width(Integer.toString(values[index])),
-                statY + row * 17 + 3, VALUE, false);
+            String valueText = Integer.toString(values[index]);
+            int valueX = x + width - 5 - minecraft.font.width(valueText);
+            graphics.drawString(minecraft.font, trim(minecraft, name, valueX - x - 9), x + 4, rowY + 3,
+                color(SoulUiTheme.TEXT, opacity), false);
+            graphics.drawString(minecraft.font, valueText, valueX, rowY + 3,
+                color(SoulUiTheme.VALUE, opacity), false);
         }
 
-        int attributesTop = statY + 56;
-        graphics.drawString(minecraft.font, Component.translatable("screen.soul_ascension.public_attributes"),
-            x + 3, attributesTop, ACCENT, false);
+        int attributesTop = statY + STAT_COUNT * STAT_ROW_HEIGHT + 6;
+        graphics.drawString(minecraft.font, Component.translatable("overlay.soul_ascension.soul_lens.public_attributes"),
+            x + 3, attributesTop, color(SoulUiTheme.ACCENT, opacity), false);
         int clipTop = attributesTop + 14;
         graphics.enableScissor(x, clipTop, x + width, y + height);
         int rowY = clipTop - scroll;
         for (PublicProfileData.PublicAttribute attribute : profile.attributes()) {
             var holder = BuiltInRegistries.ATTRIBUTE.getHolder(attribute.id()).orElse(null);
             if (holder == null) continue;
-            graphics.blitSprite(SECTION, x, rowY, width, 15);
+            blit(graphics, SECTION, x, rowY, width, 15, opacity);
             Component name = Component.translatable(holder.value().getDescriptionId());
             Component value = DynamicAttributeView.formatValue(attribute.id(), holder.value(), attribute.value());
-            graphics.drawString(minecraft.font, trim(minecraft, name, width - 72), x + 4, rowY + 3, TEXT, false);
-            graphics.drawString(minecraft.font, value, x + width - 4 - minecraft.font.width(value), rowY + 3, VALUE, false);
-            rowY += 17;
+            int valueX = x + width - 4 - minecraft.font.width(value);
+            graphics.drawString(minecraft.font, trim(minecraft, name, valueX - x - 8), x + 4, rowY + 3,
+                color(SoulUiTheme.TEXT, opacity), false);
+            graphics.drawString(minecraft.font, value, valueX, rowY + 3, color(SoulUiTheme.VALUE, opacity), false);
+            rowY += STAT_ROW_HEIGHT;
         }
         graphics.disableScissor();
     }
 
     private static Component stateMessage() {
         return switch (status) {
-            case NO_TARGET -> Component.translatable("overlay.soul_ascension.soul_lens.no_target");
+            case NO_TARGET -> Component.translatable("overlay.soul_ascension.soul_lens.aim_at_player");
             case LOADING -> Component.translatable("overlay.soul_ascension.soul_lens.loading");
             case SoulLensProfilePayload.HIDDEN -> Component.translatable("overlay.soul_ascension.soul_lens.hidden_profile");
             case SoulLensProfilePayload.OUT_OF_RANGE -> Component.translatable("overlay.soul_ascension.soul_lens.out_of_range");
@@ -192,17 +211,36 @@ public final class SoulLensOverlay {
         scroll = 0;
     }
 
-    private static int maxScroll() {
-        if (profile == null) return 0;
-        Minecraft minecraft = Minecraft.getInstance();
-        int visible = Math.min(320, Math.max(150, minecraft.getWindow().getGuiScaledHeight() - 52)) - 166;
-        return Math.max(0, profile.attributes().size() * 17 - Math.max(20, visible));
+    private static int activeHeight(int guiHeight) {
+        return Math.min(340, Math.max(230, guiHeight - 52));
     }
 
-    private static void clampScroll() { scroll = Math.max(0, Math.min(scroll, maxScroll())); }
+    private static int maxScroll() {
+        if (profile == null) return 0;
+        int visible = Math.max(20, activeHeight(Minecraft.getInstance().getWindow().getGuiScaledHeight())
+            - ATTRIBUTE_CLIP_OFFSET - ACTIVE_CONTENT_TOP);
+        return Math.max(0, profile.attributes().size() * STAT_ROW_HEIGHT - visible);
+    }
+
+    private static void clampScroll() {
+        scroll = Math.max(0, Math.min(scroll, maxScroll()));
+    }
 
     private static net.minecraft.util.FormattedCharSequence trim(Minecraft minecraft, Component value, int width) {
         List<net.minecraft.util.FormattedCharSequence> lines = minecraft.font.split(value, Math.max(12, width));
         return lines.isEmpty() ? net.minecraft.util.FormattedCharSequence.EMPTY : lines.getFirst();
+    }
+
+    private static int color(int base, double opacity) {
+        return SoulUiTheme.withOpacity(base, opacity);
+    }
+
+    private static void blit(GuiGraphics graphics, ResourceLocation sprite, int x, int y, int width, int height,
+                             double opacity) {
+        RenderSystem.enableBlend();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, (float) Math.max(0.0, Math.min(1.0, opacity)));
+        graphics.blitSprite(sprite, x, y, width, height);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.disableBlend();
     }
 }

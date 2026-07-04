@@ -16,9 +16,17 @@ import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 public final class SoulAltarService {
     private static final double MAX_DISTANCE_SQUARED = 64.0;
+    private static final int SESSION_LIFETIME_TICKS = 20 * 30;
+    private static final Map<UUID, Session> SESSIONS = new ConcurrentHashMap<>();
+
+    private record Session(BlockPos altarPos, long id, int expiresAtPlayerTick) {}
 
     private SoulAltarService() {}
 
@@ -34,19 +42,28 @@ public final class SoulAltarService {
         }
         ProfilePrivacyData privacy = ProfilePrivacyService.get(player);
         String costType = SoulAscensionServerConfig.ALTAR_RESPEC_COST_TYPE.get().toLowerCase(Locale.ROOT);
-        PacketDistributor.sendToPlayer(player, new SoulAltarOpenPayload(pos,
+        long sessionId = ThreadLocalRandom.current().nextLong();
+        SESSIONS.put(player.getUUID(), new Session(pos.immutable(), sessionId,
+            player.tickCount + SESSION_LIFETIME_TICKS));
+        PacketDistributor.sendToPlayer(player, new SoulAltarOpenPayload(pos, sessionId,
             SoulAscensionServerConfig.ALTAR_ALLOW_RESPEC.get() && !costType.equals("disabled"),
             SoulAscensionServerConfig.ALTAR_RESPEC_CONFIRMATION.get(), ProfilePrivacyService.canToggle(player),
             privacy.profileHidden(), ProfilePrivacyService.isEffectivelyHidden(player), costType,
             SoulAscensionServerConfig.ALTAR_RESPEC_COST_AMOUNT.get()));
     }
 
-    public static void handleAction(ServerPlayer player, BlockPos pos, int action, boolean value) {
-        if (!isValidAccess(player, pos) || !SoulAscensionServerConfig.ALTAR_ENABLED.get()) return;
+    public static void handleAction(ServerPlayer player, BlockPos pos, long sessionId, int action, boolean value) {
+        Session session = SESSIONS.get(player.getUUID());
+        if (session == null || session.id() != sessionId || !session.altarPos().equals(pos)
+            || player.tickCount > session.expiresAtPlayerTick() || !isValidAccess(player, pos)
+            || !SoulAscensionServerConfig.ALTAR_ENABLED.get()) {
+            SESSIONS.remove(player.getUUID());
+            return;
+        }
         if (action == SoulAltarActionPayload.RESPEC) {
             respec(player);
         } else if (action == SoulAltarActionPayload.SET_VISIBILITY) {
-            if (!ProfilePrivacyService.setHidden(player, value))
+            if (!ProfilePrivacyService.setProfileHidden(player, value))
                 player.displayClientMessage(Component.translatable("tooltip.soul_ascension.requires_concealment_emblem"), true);
         } else return;
         open(player, pos);

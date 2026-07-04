@@ -7,6 +7,8 @@ public final class ClientSoulAltarHandler {
     private ClientSoulAltarHandler() {}
 
     public static void open(SoulAltarOpenPayload payload) {
-        Minecraft.getInstance().setScreen(new SoulAltarScreen(payload));
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.screen instanceof SoulAltarScreen screen) screen.refreshFromServer(payload);
+        else minecraft.setScreen(new SoulAltarScreen(payload));
     }
 }
