@@ -10,7 +10,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import org.lwjgl.glfw.GLFW;
@@ -28,10 +27,6 @@ public final class SoulAscensionClientEvents {
             UApiScreenTabs.register(SoulAscensionMod.id("character"), 100,
                 Component.translatable("button.soul_ascension.character"),
                 SoulAscensionMod.id("textures/gui/icons/character_tab.png"), minecraft -> new CharacterScreen());
-        }
-
-        @SubscribeEvent public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
-            event.registerBlockEntityRenderer(SoulAscensionMod.SOUL_ALTAR_BLOCK_ENTITY.get(), SoulAltarRenderer::new);
         }
     }
 

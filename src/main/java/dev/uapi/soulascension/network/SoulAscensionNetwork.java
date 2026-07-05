@@ -1,12 +1,12 @@
 package dev.uapi.soulascension.network;
 
 import dev.uapi.soulascension.client.ClientPublicProfileHandler;
-import dev.uapi.soulascension.client.ClientSoulAltarHandler;
+import dev.uapi.soulascension.client.CharacterScreen;
 import dev.uapi.soulascension.client.SoulLensOverlay;
-import dev.uapi.soulascension.config.SoulAscensionServerConfig;
-import dev.uapi.soulascension.data.Stat;
+import dev.uapi.soulascension.config.SoulAscensionConfigManager;
+import dev.uapi.soulascension.config.SoulAscensionRuntimeConfig;
+import dev.uapi.soulascension.config.AttributeRewardsConfig;
 import dev.uapi.soulascension.progression.SoulAscensionService;
-import dev.uapi.soulascension.progression.SoulAltarService;
 import dev.uapi.soulascension.progression.SoulLensService;
 import dev.uapi.soulascension.title.TitleService;
 import net.minecraft.server.level.ServerPlayer;
@@ -17,14 +17,15 @@ public final class SoulAscensionNetwork {
     private SoulAscensionNetwork() {}
 
     public static void register(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("6");
-        registrar.playToServer(SpendStatPayload.TYPE, SpendStatPayload.STREAM_CODEC, (payload, context) -> {
-            if (!(context.player() instanceof ServerPlayer player)) return;
-            if (payload.statOrdinal() >= 0 && payload.statOrdinal() < Stat.values().length
-                && payload.delta() == 1) {
-                SoulAscensionService.changeStat(player, Stat.values()[payload.statOrdinal()], 1);
-            }
-        });
+        var registrar = event.registrar("7");
+        registrar.playToServer(ApplyStatAllocationPayload.TYPE, ApplyStatAllocationPayload.STREAM_CODEC,
+            (payload, context) -> {
+                if (!(context.player() instanceof ServerPlayer player)) return;
+                boolean accepted = SoulAscensionService.applyAllocation(player, payload.increments());
+                PacketDistributor.sendToPlayer(player, new StatAllocationResultPayload(accepted));
+            });
+        registrar.playToClient(StatAllocationResultPayload.TYPE, StatAllocationResultPayload.STREAM_CODEC,
+            (payload, context) -> CharacterScreen.receiveAllocationResult(payload.accepted()));
         registrar.playToServer(SelectTitlePayload.TYPE, SelectTitlePayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) TitleService.select(player, payload.titleId());
         });
@@ -34,12 +35,6 @@ public final class SoulAscensionNetwork {
             (payload, context) -> ClientPublicProfileHandler.open(payload));
         registrar.playToClient(ProgressionRulesPayload.TYPE, ProgressionRulesPayload.STREAM_CODEC,
             (payload, context) -> ClientProgressionRules.replace(payload));
-        registrar.playToClient(SoulAltarOpenPayload.TYPE, SoulAltarOpenPayload.STREAM_CODEC,
-            (payload, context) -> ClientSoulAltarHandler.open(payload));
-        registrar.playToServer(SoulAltarActionPayload.TYPE, SoulAltarActionPayload.STREAM_CODEC, (payload, context) -> {
-            if (context.player() instanceof ServerPlayer player)
-                SoulAltarService.handleAction(player, payload.altarPos(), payload.sessionId(), payload.action(), payload.value());
-        });
         registrar.playToServer(SoulLensRequestPayload.TYPE, SoulLensRequestPayload.STREAM_CODEC, (payload, context) -> {
             if (context.player() instanceof ServerPlayer player) SoulLensService.inspect(player, payload.targetId());
         });
@@ -48,15 +43,20 @@ public final class SoulAscensionNetwork {
     }
 
     public static void syncRules(ServerPlayer player) {
+        SoulAscensionRuntimeConfig config = SoulAscensionConfigManager.current();
         PacketDistributor.sendToPlayer(player, new ProgressionRulesPayload(
-            SoulAscensionServerConfig.AMNESIA_POINT_LOSS_ENABLED.get(),
-            SoulAscensionServerConfig.AMNESIA_POINT_LOSS_PERCENT.get(),
-            SoulAscensionServerConfig.SOUL_LENS_ENABLED.get(), SoulAscensionServerConfig.SOUL_LENS_RANGE.get(),
-            SoulAscensionServerConfig.SOUL_LENS_UPDATE_INTERVAL.get(),
-            SoulAscensionServerConfig.SOUL_LENS_BLOCK_HOTBAR_SCROLL.get(),
-            SoulAscensionServerConfig.SOUL_LENS_IDLE_OVERLAY_OPACITY.get(),
-            SoulAscensionServerConfig.SOUL_LENS_ACTIVE_OVERLAY_OPACITY.get(),
-            SoulAscensionServerConfig.SOUL_LENS_HIDDEN_OVERLAY_OPACITY.get(),
-            SoulAscensionServerConfig.SOUL_LENS_SHOW_IDLE_HINT.get()));
+            config.amnesiaPointLossEnabled(),
+            config.amnesiaPointLossPercent(),
+            config.limitStatPoints(),
+            config.maxPointsPerStat(),
+            config.soulLensEnabled(), config.soulLensRange(),
+            config.soulLensUpdateInterval(),
+            config.soulLensBlockHotbarScroll(),
+            config.soulLensIdleOverlayOpacity(),
+            config.soulLensActiveOverlayOpacity(),
+            config.soulLensShowIdleHint(),
+            AttributeRewardsConfig.experienceBonusPerPoint(),
+            AttributeRewardsConfig.affectsVanillaExperience(),
+            AttributeRewardsConfig.affectsSoulProgression()));
     }
 }

@@ -24,6 +24,23 @@ public final class StatAttributePreview {
 
     private StatAttributePreview() {}
 
+    /** Computes the effective value with all pending stat modifiers replaced locally. */
+    public static double value(LocalPlayer player, PlayerProgress preview, ResourceLocation attributeId,
+                               AttributeInstance instance) {
+        List<AttributeService.ModifierReplacement> replacements = new ArrayList<>();
+        for (Stat stat : Stat.values()) {
+            for (AttributeService.ConfiguredModifier definition : AttributeService.definitions(stat)) {
+                if (!definition.attributeId().equals(attributeId)) continue;
+                ResourceLocation modifierId = AttributeService.modifierId(stat, definition.index());
+                double amount = AttributeService.effectiveAmount(instance, modifierId, definition,
+                    Math.max(0, preview.stat(stat)));
+                replacements.add(new AttributeService.ModifierReplacement(modifierId, amount, definition.operation()));
+            }
+        }
+        return replacements.isEmpty() ? instance.getValue()
+            : AttributeService.valueWithReplacements(instance, replacements);
+    }
+
     public static List<Change> change(LocalPlayer player, PlayerProgress progress, Stat stat, int delta) {
         Map<ResourceLocation, List<AttributeService.ConfiguredModifier>> grouped = new LinkedHashMap<>();
         for (AttributeService.ConfiguredModifier definition : AttributeService.definitions(stat))
@@ -36,14 +53,8 @@ public final class StatAttributePreview {
             AttributeInstance instance = player.getAttribute(holder);
             if (instance == null) continue;
 
-            double afterValue = instance.getValue();
-            for (AttributeService.ConfiguredModifier definition : entry.getValue()) {
-                ResourceLocation modifierId = AttributeService.modifierId(stat, definition.index());
-                double amount = AttributeService.effectiveAmount(instance, modifierId, definition,
-                    Math.max(0, progress.stat(stat) + delta));
-                afterValue = AttributeService.valueWithReplacement(instance, modifierId, amount, definition.operation());
-            }
-            double beforeValue = instance.getValue();
+            double beforeValue = value(player, progress, entry.getKey(), instance);
+            double afterValue = value(player, withStatDelta(progress, stat, delta), entry.getKey(), instance);
             boolean capped = delta > 0 && Math.abs(afterValue - beforeValue) < 1.0E-9
                 && entry.getValue().stream().anyMatch(definition -> definition.maximumFinal() != null
                     && definition.amountPerPoint() > 0);
@@ -52,6 +63,14 @@ public final class StatAttributePreview {
                 holder.value().toValueComponent(null, afterValue, TooltipFlag.NORMAL), beforeValue, afterValue, capped));
         }
         return List.copyOf(result);
+    }
+
+    private static PlayerProgress withStatDelta(PlayerProgress progress, Stat stat, int delta) {
+        int[] values = {progress.strength(), progress.endurance(), progress.agility(), progress.intelligence(),
+            progress.perception()};
+        values[stat.ordinal()] = Math.max(0, values[stat.ordinal()] + delta);
+        return new PlayerProgress(progress.level(), progress.damageProgress(), progress.requiredDamage(),
+            progress.unspentPoints(), values[0], values[1], values[2], values[3], values[4]);
     }
 
 }

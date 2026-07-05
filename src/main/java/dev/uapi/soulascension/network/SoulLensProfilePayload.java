@@ -9,8 +9,7 @@ import java.util.UUID;
 
 public record SoulLensProfilePayload(UUID targetId, int status, PublicProfileData profile) implements CustomPacketPayload {
     public static final int VISIBLE = 0;
-    public static final int HIDDEN = 1;
-    public static final int OUT_OF_RANGE = 2;
+    public static final int OUT_OF_RANGE = 1;
     public static final Type<SoulLensProfilePayload> TYPE = new Type<>(SoulAscensionMod.id("soul_lens_profile"));
     public static final StreamCodec<RegistryFriendlyByteBuf, SoulLensProfilePayload> STREAM_CODEC = new StreamCodec<>() {
         @Override public SoulLensProfilePayload decode(RegistryFriendlyByteBuf buffer) {

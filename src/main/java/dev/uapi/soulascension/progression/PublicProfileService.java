@@ -33,10 +33,6 @@ public final class PublicProfileService {
     private PublicProfileService() {}
 
     public static void open(ServerPlayer viewer, ServerPlayer target) {
-        if (!ProfilePrivacyService.mayInspect(viewer, target)) {
-            viewer.displayClientMessage(Component.translatable("screen.soul_ascension.public_profile.hidden"), true);
-            return;
-        }
         PacketDistributor.sendToPlayer(viewer, new PublicProfilePayload(snapshot(target)));
     }
 

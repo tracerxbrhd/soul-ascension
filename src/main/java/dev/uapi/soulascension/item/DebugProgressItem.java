@@ -1,6 +1,6 @@
 package dev.uapi.soulascension.item;
 
-import dev.uapi.soulascension.config.SoulAscensionServerConfig;
+import dev.uapi.soulascension.config.SoulAscensionConfigManager;
 import dev.uapi.soulascension.data.PlayerProgress;
 import dev.uapi.soulascension.progression.SoulAscensionService;
 import net.minecraft.ChatFormatting;
@@ -30,7 +30,7 @@ public final class DebugProgressItem extends Item {
         ItemStack stack = player.getItemInHand(hand);
         if (level.isClientSide()) return InteractionResultHolder.sidedSuccess(stack, true);
         if (!(player instanceof ServerPlayer serverPlayer) || !serverPlayer.hasPermissions(2)
-            || !SoulAscensionServerConfig.DEBUG_ITEMS_ENABLED.get()) return InteractionResultHolder.fail(stack);
+            || !SoulAscensionConfigManager.current().debugItemsEnabled()) return InteractionResultHolder.fail(stack);
         switch (action) {
             case LEVEL_UP -> {
                 PlayerProgress progress = SoulAscensionService.get(serverPlayer);

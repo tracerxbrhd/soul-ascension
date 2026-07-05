@@ -1,9 +1,8 @@
 package dev.uapi.soulascension.progression;
 
 import com.mojang.logging.LogUtils;
-import dev.uapi.integration.IntegrationService;
 import dev.uapi.soulascension.SoulAscensionMod;
-import dev.uapi.soulascension.config.SoulAscensionServerConfig;
+import dev.uapi.soulascension.config.AttributeRewardsConfig;
 import dev.uapi.soulascension.data.PlayerProgress;
 import dev.uapi.soulascension.data.Stat;
 import net.minecraft.core.Holder;
@@ -33,6 +32,7 @@ public final class AttributeService {
                                      AttributeModifier.Operation operation, Double minimumFinal,
                                      Double maximumFinal, String requiredMod, boolean displayInUi,
                                      String category, String formatter, boolean enabled, int index) {}
+    public record ModifierReplacement(ResourceLocation id, double amount, AttributeModifier.Operation operation) {}
 
     public static void apply(ServerPlayer player, PlayerProgress progress) {
         removeManagedModifiers(player);
@@ -55,17 +55,7 @@ public final class AttributeService {
     }
 
     public static List<ConfiguredModifier> definitions(Stat stat) {
-        String configured = SoulAscensionServerConfig.modifiers(stat);
-        if (configured == null || configured.isBlank()) return List.of();
-        List<ConfiguredModifier> parsed = new ArrayList<>();
-        String[] entries = configured.split(";");
-        for (int index = 0; index < entries.length && index < MAX_CONFIGURED_MODIFIERS_PER_STAT; index++) {
-            String entry = entries[index].trim();
-            if (entry.isEmpty()) continue;
-            Optional<ConfiguredModifier> definition = parse(entry, index);
-            definition.ifPresent(parsed::add);
-        }
-        return List.copyOf(parsed);
+        return AttributeRewardsConfig.definitions(stat);
     }
 
     public static Optional<ConfiguredModifier> displayDefinition(ResourceLocation attributeId) {
@@ -74,7 +64,7 @@ public final class AttributeService {
         return Optional.empty();
     }
 
-    private static Optional<ConfiguredModifier> parse(String entry, int index) {
+    public static Optional<ConfiguredModifier> parseLegacy(String entry, int index) {
         String[] parts = entry.split("\\|", -1);
         if (parts.length != 3 && parts.length != 9 && parts.length != 10) {
             warnOnce("format:" + entry,
@@ -99,13 +89,6 @@ public final class AttributeService {
             String formatter = parts.length == 10 ? normalizeFormatter(parts[8]) : "auto";
             boolean enabled = parts.length < 9 || booleanValue(parts[parts.length - 1], "enabled");
             if (!enabled) return Optional.empty();
-            if (!requiredMod.isEmpty() && !IntegrationService.isLoaded(requiredMod)) return Optional.empty();
-            Holder<Attribute> attribute = BuiltInRegistries.ATTRIBUTE.getHolder(attributeId).orElse(null);
-            if (attribute == null) {
-                warnOnce("attribute:" + attributeId,
-                    "Skipping unknown SOUL ASCENSION attribute reward '{}'", attributeId);
-                return Optional.empty();
-            }
             return Optional.of(new ConfiguredModifier(attributeId, perPoint, operation, minimum, maximum,
                 requiredMod, display, category, formatter, true, index));
         } catch (RuntimeException exception) {
@@ -146,10 +129,18 @@ public final class AttributeService {
 
     public static double valueWithReplacement(AttributeInstance instance, ResourceLocation modifierId,
                                               double amount, AttributeModifier.Operation operation) {
+        return valueWithReplacements(instance, List.of(new ModifierReplacement(modifierId, amount, operation)));
+    }
+
+    public static double valueWithReplacements(AttributeInstance instance, List<ModifierReplacement> replacements) {
+        Set<ResourceLocation> replacedIds = new HashSet<>();
+        for (ModifierReplacement replacement : replacements) replacedIds.add(replacement.id());
         List<AttributeModifier> modifiers = new ArrayList<>();
         for (AttributeModifier modifier : instance.getModifiers())
-            if (!modifier.id().equals(modifierId)) modifiers.add(modifier);
-        if (Math.abs(amount) >= 1.0E-12) modifiers.add(new AttributeModifier(modifierId, amount, operation));
+            if (!replacedIds.contains(modifier.id())) modifiers.add(modifier);
+        for (ModifierReplacement replacement : replacements)
+            if (Math.abs(replacement.amount()) >= 1.0E-12)
+                modifiers.add(new AttributeModifier(replacement.id(), replacement.amount(), replacement.operation()));
 
         double value = instance.getBaseValue();
         for (AttributeModifier modifier : modifiers)

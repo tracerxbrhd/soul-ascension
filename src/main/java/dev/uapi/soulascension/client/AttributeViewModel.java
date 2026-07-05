@@ -16,7 +16,6 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.neoforged.fml.ModList;
@@ -38,9 +37,11 @@ public final class AttributeViewModel {
 
     public record DisplayEntry(ResourceLocation id, Holder<Attribute> attribute, Component name,
                                Component description, AttributeDisplayRegistry.Category category,
-                               double baseValue, double currentValue, Component formattedBase,
-                               Component formattedCurrent, List<SourceEntry> sources) {
+                               double baseValue, double currentValue, double previewValue,
+                               Component formattedBase, Component formattedCurrent,
+                               Component formattedPreview, List<SourceEntry> sources) {
         public DisplayEntry { sources = List.copyOf(sources); }
+        public boolean hasPreview() { return Math.abs(previewValue - currentValue) > 1.0E-9; }
     }
 
     public record Group(AttributeDisplayRegistry.Category category, List<DisplayEntry> entries) {
@@ -52,9 +53,11 @@ public final class AttributeViewModel {
 
     private List<Group> groups = List.of();
     private Map<ResourceLocation, DisplayEntry> byId = Map.of();
+    private static final Map<ResourceLocation, Component> DESCRIPTION_CACHE = new HashMap<>();
     private ResourceLocation selectedId;
     private long lastFingerprint = Long.MIN_VALUE;
     private int ticksSinceRefresh = 10;
+    private boolean dirty = true;
 
     public List<Group> groups() { return groups; }
     public Optional<DisplayEntry> selected() { return Optional.ofNullable(byId.get(selectedId)); }
@@ -65,17 +68,17 @@ public final class AttributeViewModel {
     }
 
     public void forceRefresh() {
-        ticksSinceRefresh = 10;
-        lastFingerprint = Long.MIN_VALUE;
+        dirty = true;
     }
 
     public void tick(net.minecraft.client.player.LocalPlayer player, PlayerProgress progress) {
-        ticksSinceRefresh++;
+        if (!dirty && ++ticksSinceRefresh < 10) return;
         long fingerprint = fingerprint(player, progress);
-        if (fingerprint != lastFingerprint || ticksSinceRefresh >= 10) rebuild(player, fingerprint);
+        if (dirty || fingerprint != lastFingerprint) rebuild(player, progress, fingerprint);
+        else ticksSinceRefresh = 0;
     }
 
-    private void rebuild(net.minecraft.client.player.LocalPlayer player, long fingerprint) {
+    private void rebuild(net.minecraft.client.player.LocalPlayer player, PlayerProgress progress, long fingerprint) {
         Map<ModifierKey, EquipmentSource> equipment = equipmentSources(player);
         Map<ModifierKey, Component> effects = effectSources(player);
         List<Group> rebuiltGroups = new ArrayList<>();
@@ -89,10 +92,12 @@ public final class AttributeViewModel {
                 AttributeInstance instance = player.getAttribute(holder);
                 if (instance == null) continue;
                 List<SourceEntry> sources = collectSources(value.id(), holder, instance, equipment, effects);
+                double previewValue = StatAttributePreview.value(player, progress, value.id(), instance);
                 DisplayEntry entry = new DisplayEntry(value.id(), holder, value.name(), description(value.id()),
-                    group.category(), instance.getBaseValue(), instance.getValue(),
+                    group.category(), instance.getBaseValue(), instance.getValue(), previewValue,
                     DynamicAttributeView.formatValue(value.id(), holder.value(), instance.getBaseValue()),
-                    DynamicAttributeView.formatValue(value.id(), holder.value(), instance.getValue()), sources);
+                    DynamicAttributeView.formatValue(value.id(), holder.value(), instance.getValue()),
+                    DynamicAttributeView.formatValue(value.id(), holder.value(), previewValue), sources);
                 entries.add(entry);
                 rebuiltById.put(entry.id(), entry);
             }
@@ -106,6 +111,7 @@ public final class AttributeViewModel {
                 .findFirst().orElse(null);
         lastFingerprint = fingerprint;
         ticksSinceRefresh = 0;
+        dirty = false;
     }
 
     private static List<SourceEntry> collectSources(ResourceLocation attributeId, Holder<Attribute> holder,
@@ -174,8 +180,14 @@ public final class AttributeViewModel {
 
     private static long fingerprint(net.minecraft.client.player.LocalPlayer player, PlayerProgress progress) {
         long value = progress.hashCode();
-        value = value * 31L + Double.doubleToLongBits(player.getAttributeValue(Attributes.ATTACK_DAMAGE));
-        value = value * 31L + Double.doubleToLongBits(player.getAttributeValue(Attributes.ATTACK_SPEED));
+        var attributes = BuiltInRegistries.ATTRIBUTE.holders().iterator();
+        while (attributes.hasNext()) {
+            Holder<Attribute> holder = attributes.next();
+            AttributeInstance instance = player.getAttribute(holder);
+            if (instance == null) continue;
+            value = value * 31L + holder.unwrapKey().map(key -> key.location().hashCode()).orElse(0);
+            value = value * 31L + Double.doubleToLongBits(instance.getValue());
+        }
         for (EquipmentSlot slot : EquipmentSlot.values())
             value = value * 31L + ItemStack.hashItemAndComponents(player.getItemBySlot(slot));
         for (MobEffectInstance effect : player.getActiveEffects()) {
@@ -188,10 +200,12 @@ public final class AttributeViewModel {
     }
 
     private static Component description(ResourceLocation id) {
-        String key = "attribute_description.soul_ascension." + id.getNamespace() + "."
-            + id.getPath().replace('/', '.');
-        return I18n.exists(key) ? Component.translatable(key)
-            : Component.translatable("screen.soul_ascension.attribute.no_description");
+        return DESCRIPTION_CACHE.computeIfAbsent(id, keyId -> {
+            String key = "attribute_description.soul_ascension." + keyId.getNamespace() + "."
+                + keyId.getPath().replace('/', '.');
+            return I18n.exists(key) ? Component.translatable(key)
+                : Component.translatable("screen.soul_ascension.attribute.no_description");
+        });
     }
 
     private static String slotGroupName(EquipmentSlot slot) {

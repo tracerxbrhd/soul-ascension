@@ -1,38 +1,35 @@
 # Changelog
 
+## 1.2.0 - 2026-07-05
+
+- Fixed startup with an empty config directory by separating NeoForge config specs from safe runtime snapshots.
+- Added automatic backup and regeneration for malformed `attribute_rewards.json` files.
+- Added server-authoritative pending stat allocation with separated Confirm and Cancel controls and live effective-attribute previews.
+- Added configurable Intelligence bonuses for vanilla experience and damage-based Soul progression.
+- Moved attribute rewards to a validated tree-structured JSON file with legacy TOML migration.
+- Reworked Potion of Withered Memory into a standalone drink made with a wither rose, applying Weakness/Nausea for 45 seconds and Poison II/Wither II for nine seconds without vanilla potion variants.
+- Restricted player respec to the Amnesia Scroll and Potion of Withered Memory.
+- Added a resource-pack-replaceable 3D Soul Lens model exported from Blockbench while retaining spyglass use behavior and the inventory presentation.
+- Added throttled and cached Soul Lens profile rendering and moved the Soul Badge recipe up one crafting row.
+- Reworked the Character Screen profile header and merged compatible mod attributes into the main categorized attribute page.
+- Removed the experimental in-game configuration editor; configuration remains file-based.
+- Removed Soul Altar, Concealment Emblem and profile-hiding systems.
+
 ## 1.1.1 - 2026-07-04
 
-- Rebuilt Soul Altar as an authenticated Character Screen mode with shared character, stats, title, progress, and attribute panels.
-- Restricted respec to a short-lived server-issued Soul Altar session; normal and public character screens can no longer decrease stats.
-- Unified profile privacy checks for Soul Badge and Soul Lens and documented operator bypass behavior for integrated-server testing.
-- Reworked Soul Lens stats into equal full-width rows and added configurable idle, active, and hidden-profile opacity.
+- Improved the Character Screen layout and server-authenticated profile handling.
+- Reworked Soul Lens attribute rows and configurable overlay opacity.
 
 ## 1.1.0 - 2026-07-04
 
-- Added the Soul Altar block, animated Eye of Ender renderer, configurable
-  respec, and persistent profile visibility controls.
-- Added the Emblem of Concealment, workbench recipe,
-  fallback activation, persistent privacy data, and optional Curios charm support through U-API.
-- Added the Soul Lens spyglass item with a non-blocking, scrollable public-build HUD overlay.
-- Replaced vanilla-gray Soul Altar controls with resource-pack-friendly Soul Ascension widgets
-  and removed the online-player list from the altar.
-- Fixed creative-tab potion stacks losing their potion contents and effects.
-- Made Amnesia Scroll and Potion of Withered Memory usable with empty allocations
-  and removed their reset chat spam.
+- Added the Soul Lens, Soul Badge, Potion of Withered Memory and public character profiles.
 - Added cached skin snapshots and a 2D head fallback to public profiles.
-- Added the Soul Badge with a survival recipe, self-profile shortcut, and
-  server-authoritative read-only profiles for other players.
-- Added the Potion of Withered Memory, brewed from a long Potion of Weakness
-  with an amethyst shard, as an early survival stat-reset option.
-- Removed the redundant Origin Sigil (`debug_reset`).
 - Added server-synchronized Amnesia Scroll loss information.
-- Replaced the Soul Ascension item textures for the badge, potion, remaining
-  debug sigils, and rolled Amnesia Scroll.
+- Replaced item textures for the badge, potion, debug sigils and Amnesia Scroll.
 
 ## 1.0.1 - 2026-07-04
 
-- Fixed dynamic Attack Damage updates when Apotheosis/Apothic Attributes and
-  Iron's Spells 'n Spellbooks are not installed.
+- Fixed dynamic Attack Damage updates without optional attribute or spell mods.
 - Changed the project and packaged artifact license to All Rights Reserved.
 - Added the license notice to `META-INF/LICENSE` in release JARs.
 

@@ -2,7 +2,9 @@ package dev.uapi.soulascension.progression;
 
 import com.google.gson.JsonObject;
 import dev.uapi.reward.RewardContext;
-import dev.uapi.soulascension.config.SoulAscensionServerConfig;
+import dev.uapi.soulascension.config.SoulAscensionConfigManager;
+import dev.uapi.soulascension.config.SoulAscensionRuntimeConfig;
+import dev.uapi.soulascension.config.AttributeRewardsConfig;
 import dev.uapi.soulascension.data.SoulAscensionAttachments;
 import dev.uapi.soulascension.data.PlayerProgress;
 import dev.uapi.soulascension.data.Stat;
@@ -19,22 +21,22 @@ public final class SoulAscensionService {
 
     public static PlayerProgress get(ServerPlayer player) { return player.getData(SoulAscensionAttachments.PROGRESS); }
     public static double requiredDamage(int level) {
+        SoulAscensionRuntimeConfig config = SoulAscensionConfigManager.current();
         int safeLevel = Math.max(1, level);
         double levelOffset = safeLevel - 1.0;
-        double linear = SoulAscensionServerConfig.BASE_REQUIRED_DAMAGE.get()
-            + levelOffset * SoulAscensionServerConfig.LINEAR_PER_LEVEL.get();
+        double linear = config.baseRequiredDamage() + levelOffset * config.linearPerLevel();
         double result = linear
-            * Math.pow(safeLevel, SoulAscensionServerConfig.POWER_SCALING.get())
-            * Math.pow(SoulAscensionServerConfig.EXPONENTIAL_MULTIPLIER.get(), levelOffset);
+            * Math.pow(safeLevel, config.powerScaling())
+            * Math.pow(config.exponentialMultiplier(), levelOffset);
         if (!Double.isFinite(result)) result = Double.MAX_VALUE;
-        result = Math.max(SoulAscensionServerConfig.MIN_REQUIRED_DAMAGE.get(), result);
-        double maximum = SoulAscensionServerConfig.MAX_REQUIRED_DAMAGE.get();
+        result = Math.max(config.minRequiredDamage(), result);
+        double maximum = config.maxRequiredDamage();
         return maximum > 0 ? Math.min(maximum, result) : result;
     }
 
     public static void refreshRules(ServerPlayer player) {
         PlayerProgress old = get(player);
-        int maximum = SoulAscensionServerConfig.MAX_LEVEL.get();
+        int maximum = SoulAscensionConfigManager.current().maxLevel();
         int level = maximum > 0 ? Math.min(old.level(), maximum) : old.level();
         double progress = maximum > 0 && level >= maximum ? 0 : old.damageProgress();
         double required = requiredDamage(level);
@@ -48,7 +50,7 @@ public final class SoulAscensionService {
     public static int addExperience(ServerPlayer player, double amount) {
         if (amount <= 0) return 0;
         PlayerProgress old = get(player);
-        int maxLevel = SoulAscensionServerConfig.MAX_LEVEL.get();
+        int maxLevel = SoulAscensionConfigManager.current().maxLevel();
         if (maxLevel > 0 && old.level() >= maxLevel) return 0;
         int level = old.level();
         int points = old.unspentPoints();
@@ -73,18 +75,48 @@ public final class SoulAscensionService {
         return changeStat(player, stat, 1);
     }
 
+    /** Atomically validates and applies client-previewed positive stat increments. */
+    public static boolean applyAllocation(ServerPlayer player, int[] increments) {
+        if (increments == null || increments.length != Stat.values().length) return false;
+        PlayerProgress old = get(player);
+        long requested = 0;
+        for (int index = 0; index < increments.length; index++) {
+            int increment = increments[index];
+            if (increment < 0) return false;
+            requested += increment;
+            if (requested > old.unspentPoints()) return false;
+            SoulAscensionRuntimeConfig config = SoulAscensionConfigManager.current();
+            int maximum = config.maxPointsPerStat();
+            if (config.limitStatPoints() && maximum > 0
+                && old.stat(Stat.values()[index]) + increment > maximum) return false;
+        }
+        if (requested <= 0) return false;
+        PlayerProgress updated = new PlayerProgress(old.level(), old.damageProgress(), old.requiredDamage(),
+            old.unspentPoints() - (int) requested,
+            old.strength() + increments[Stat.STRENGTH.ordinal()],
+            old.endurance() + increments[Stat.ENDURANCE.ordinal()],
+            old.agility() + increments[Stat.AGILITY.ordinal()],
+            old.intelligence() + increments[Stat.INTELLIGENCE.ordinal()],
+            old.perception() + increments[Stat.PERCEPTION.ordinal()]);
+        player.setData(SoulAscensionAttachments.PROGRESS, updated);
+        AttributeService.apply(player, updated);
+        TitleService.evaluate(player);
+        return true;
+    }
+
     public static int pointsAwardedForLevel(int reachedLevel) {
-        return reachedLevel > 0 ? SoulAscensionServerConfig.POINTS_PER_LEVEL.get() : 0;
+        return reachedLevel > 0 ? SoulAscensionConfigManager.current().pointsPerLevel() : 0;
     }
 
     public static boolean changeStat(ServerPlayer player, Stat stat, int delta) {
         if (delta != 1 && delta != -1) return false;
-        if (delta < 0 && !SoulAscensionServerConfig.ALLOW_STAT_DECREASE.get()) return false;
+        SoulAscensionRuntimeConfig config = SoulAscensionConfigManager.current();
+        if (delta < 0 && !config.allowStatDecrease()) return false;
         PlayerProgress old = get(player);
-        int maxPerStat = SoulAscensionServerConfig.MAX_POINTS_PER_STAT.get();
-        if (delta > 0 && SoulAscensionServerConfig.LIMIT_STAT_POINTS.get()
+        int maxPerStat = config.maxPointsPerStat();
+        if (delta > 0 && config.limitStatPoints()
             && maxPerStat > 0 && old.stat(stat) >= maxPerStat) return false;
-        PlayerProgress updated = old.changeStat(stat, delta, SoulAscensionServerConfig.REFUND_DECREASED_POINTS.get());
+        PlayerProgress updated = old.changeStat(stat, delta, config.refundDecreasedPoints());
         if (updated == old) return false;
         player.setData(SoulAscensionAttachments.PROGRESS, updated);
         AttributeService.apply(player, updated);
@@ -93,7 +125,7 @@ public final class SoulAscensionService {
     }
 
     public static boolean reset(ServerPlayer player) {
-        if (!SoulAscensionServerConfig.ALLOW_RESET.get()) return false;
+        if (!SoulAscensionConfigManager.current().allowReset()) return false;
         PlayerProgress updated = get(player).resetStats();
         player.setData(SoulAscensionAttachments.PROGRESS, updated);
         AttributeService.apply(player, updated);
@@ -104,10 +136,11 @@ public final class SoulAscensionService {
     public static ResetResult resetWithAmnesia(ServerPlayer player) {
         PlayerProgress old = get(player);
         int allocated = old.strength() + old.endurance() + old.agility() + old.intelligence() + old.perception();
-        if (!SoulAscensionServerConfig.ALLOW_RESET.get())
+        SoulAscensionRuntimeConfig config = SoulAscensionConfigManager.current();
+        if (!config.allowReset())
             return new ResetResult(false, allocated, 0, 0);
-        int lost = SoulAscensionServerConfig.AMNESIA_POINT_LOSS_ENABLED.get()
-            ? (int) Math.floor(allocated * SoulAscensionServerConfig.AMNESIA_POINT_LOSS_PERCENT.get() / 100.0)
+        int lost = config.amnesiaPointLossEnabled()
+            ? (int) Math.floor(allocated * config.amnesiaPointLossPercent() / 100.0)
             : 0;
         lost = Math.max(0, Math.min(allocated, lost));
         PlayerProgress updated = old.resetStats(lost);
@@ -115,23 +148,6 @@ public final class SoulAscensionService {
         AttributeService.apply(player, updated);
         TitleService.evaluate(player);
         return new ResetResult(true, allocated, allocated - lost, lost);
-    }
-
-    /** Altar/admin respec: preserves level and accumulated damage progress and refunds every allocated point. */
-    public static ResetResult respecWithoutLoss(ServerPlayer player) {
-        PlayerProgress old = get(player);
-        int allocated = old.strength() + old.endurance() + old.agility() + old.intelligence() + old.perception();
-        PlayerProgress updated = old.resetStats();
-        player.setData(SoulAscensionAttachments.PROGRESS, updated);
-        AttributeService.apply(player, updated);
-        TitleService.evaluate(player);
-        return new ResetResult(true, allocated, allocated, 0);
-    }
-
-    /** Compatibility alias for integrations compiled against 1.0.x. */
-    @Deprecated(forRemoval = false)
-    public static ResetResult resetWithAmnesiaScroll(ServerPlayer player) {
-        return resetWithAmnesia(player);
     }
 
     public static void addPoints(ServerPlayer player, int amount) {
@@ -153,8 +169,8 @@ public final class SoulAscensionService {
         int max = Math.max(min, GsonHelper.getAsInt(data, "max", min));
         int amount = min + random.nextInt(max - min + 1);
         PlayerProgress progress = get(context.player());
-        double intelligenceBonus = 1.0 + progress.intelligence()
-            * SoulAscensionServerConfig.INTELLIGENCE_REWARD_XP_PERCENT.get() / 100.0;
+        double intelligenceBonus = AttributeRewardsConfig.affectsSoulProgression()
+            ? AttributeRewardsConfig.experienceMultiplier(progress.intelligence()) : 1.0;
         addExperience(context.player(), amount * context.instance().difficulty().rewardMultiplier() * intelligenceBonus);
         return amount > 0;
     }

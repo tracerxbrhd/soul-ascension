@@ -3,7 +3,8 @@
   "category": "misc",
   "pattern": [
     "#FG",
-    "o= "
+    "o= ",
+    "   "
   ],
   "key": {
     "#": { "item": "minecraft:paper" },

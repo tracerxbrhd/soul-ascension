@@ -45,7 +45,5 @@ public final class SoulBadgeItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable("tooltip.soul_ascension.soul_badge").withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("item.soul_ascension.concealment_emblem.tooltip.crafting")
-            .withStyle(ChatFormatting.DARK_PURPLE));
     }
 }

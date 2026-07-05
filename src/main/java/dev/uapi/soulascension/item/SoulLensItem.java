@@ -1,6 +1,6 @@
 package dev.uapi.soulascension.item;
 
-import dev.uapi.soulascension.config.SoulAscensionServerConfig;
+import dev.uapi.soulascension.config.SoulAscensionConfigManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
@@ -9,6 +9,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SpyglassItem;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.UseAnim;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 
 import java.util.List;
@@ -21,10 +23,13 @@ public final class SoulLensItem extends SpyglassItem {
         // The common config is authoritative on the server. Checking the local
         // client copy here would incorrectly disable the lens on servers whose
         // setting differs from the player's local configuration.
-        if (!level.isClientSide() && !SoulAscensionServerConfig.SOUL_LENS_ENABLED.get())
+        if (!level.isClientSide() && !SoulAscensionConfigManager.current().soulLensEnabled())
             return InteractionResultHolder.fail(player.getItemInHand(hand));
         return super.use(level, player, hand);
     }
+
+    @Override public UseAnim getUseAnimation(ItemStack stack) { return UseAnim.SPYGLASS; }
+    @Override public int getUseDuration(ItemStack stack, LivingEntity entity) { return USE_DURATION; }
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {

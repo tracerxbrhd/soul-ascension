@@ -40,7 +40,7 @@ public final class TitleService {
                 updated = updated.activeTitle(TitleProgress.NONE);
         }
         if (!updated.equals(original)) player.setData(SoulAscensionAttachments.TITLES, updated);
-        ResourceLocation displayed = dev.uapi.soulascension.config.SoulAscensionServerConfig.SHOW_TITLES_IN_NAMEPLATE.get()
+        ResourceLocation displayed = dev.uapi.soulascension.config.SoulAscensionConfigManager.current().showTitlesInNameplate()
             ? updated.activeTitle() : TitleProgress.NONE;
         if (!player.getData(SoulAscensionAttachments.ACTIVE_TITLE).equals(displayed))
             player.setData(SoulAscensionAttachments.ACTIVE_TITLE, displayed);
@@ -59,7 +59,7 @@ public final class TitleService {
         if (old.activeTitle().equals(id)) return true;
         player.setData(SoulAscensionAttachments.TITLES, old.activeTitle(id));
         player.setData(SoulAscensionAttachments.ACTIVE_TITLE,
-            dev.uapi.soulascension.config.SoulAscensionServerConfig.SHOW_TITLES_IN_NAMEPLATE.get() ? id : TitleProgress.NONE);
+            dev.uapi.soulascension.config.SoulAscensionConfigManager.current().showTitlesInNameplate() ? id : TitleProgress.NONE);
         player.refreshTabListName();
         return true;
     }

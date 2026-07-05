@@ -40,16 +40,17 @@ These sprites are used only while the SOUL ASCENSION screen is open. Vanilla inv
 The NeoForge mod-list image is the root JAR resource `soul_ascension_banner.png`. Resource packs cannot reliably replace root metadata resources; replace it only in a repackaged mod JAR.
 
 `showAsResourcePack=true` is intentionally not enabled: mod assets are already loaded as client resources, while that flag would only add a redundant selectable pack entry.
-# Soul Altar and Emblem (1.1.0)
 
-The new gameplay assets use standard resource-pack paths:
+The Soul Lens uses standard resource-pack paths:
 
-- `assets/soul_ascension/textures/block/soul_altar_top.png`
-- `assets/soul_ascension/textures/block/soul_altar_side.png`
-- `assets/soul_ascension/textures/block/soul_altar_bottom.png`
-- `assets/soul_ascension/textures/item/concealment_emblem.png`
-- `assets/soul_ascension/models/block/soul_altar.json`
-- `assets/soul_ascension/models/item/soul_altar.json`
-- `assets/soul_ascension/models/item/concealment_emblem.json`
 - `assets/soul_ascension/textures/item/soul_lens.png`
 - `assets/soul_ascension/models/item/soul_lens.json`
+
+The runtime JSON contains exported three-dimensional geometry and independent transforms for GUI, ground, fixed,
+first-person, third-person and `HEAD` contexts. The `HEAD` transform is important because `SpyglassItem` and the
+`SPYGLASS_SCOPE` item ability use that context during the vanilla spyglass animation. The `gui` transform keeps the
+same model readable as an inventory icon.
+
+A resource pack can replace either file. A replacement model must reference a runtime texture under the
+`soul_ascension` namespace and should retain all display contexts above. Blockbench `.bbmodel` files are editable
+design sources only; Minecraft loads the exported item-model JSON, not the `.bbmodel` file.

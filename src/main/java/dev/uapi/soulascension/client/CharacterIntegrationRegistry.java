@@ -34,7 +34,6 @@ public final class CharacterIntegrationRegistry {
         if (defaultsRegistered) return;
         defaultsRegistered = true;
         ResourceLocation originsIcon = SoulAscensionMod.id("textures/gui/icons/origins.png");
-        ResourceLocation integrationIcon = SoulAscensionMod.id("textures/gui/icons/integration.png");
         registerDefault(new Tab(SoulAscensionMod.id("origins"), originsIcon, Component.translatable("integration.soul_ascension.origins"), 100,
             () -> loadedAny("origins", "origins_neoforge", "neoorigins"), player -> {
                 List<Component> lines = new ArrayList<>();
@@ -44,24 +43,6 @@ public final class CharacterIntegrationRegistry {
                 if (lines.size() == 1) lines.add(Component.translatable("integration.soul_ascension.provider_hint"));
                 return lines;
             }));
-        registerDefault(new Tab(SoulAscensionMod.id("irons_spellbooks"), integrationIcon,
-            Component.translatable("integration.soul_ascension.irons_spellbooks"), 110,
-            () -> IntegrationService.isLoaded("irons_spellbooks"), player -> attributeLines(player, "irons_spellbooks")));
-        registerDefault(new Tab(SoulAscensionMod.id("apotheosis"), integrationIcon,
-            Component.translatable("integration.soul_ascension.apotheosis"), 120,
-            () -> loadedAny("apotheosis", "apothic_attributes"), player -> {
-                List<Component> values = new ArrayList<>(attributeLines(player, "apotheosis"));
-                values.addAll(attributeLines(player, "apothic_attributes"));
-                return values.stream().distinct().toList();
-            }));
-    }
-
-    private static List<Component> attributeLines(LocalPlayer player, String namespace) {
-        List<Component> result = new ArrayList<>();
-        for (DynamicAttributeView.Value value : DynamicAttributeView.forNamespace(player, namespace))
-            result.add(Component.empty().append(value.name()).append(": ").append(value.formattedValue()));
-        if (result.isEmpty()) result.add(Component.translatable("integration.soul_ascension.no_synced_data"));
-        return result;
     }
 
     private static void registerDefault(Tab tab) { TABS.putIfAbsent(tab.id(), tab); }

@@ -8,6 +8,30 @@ import java.util.Locale;
 import java.util.Optional;
 
 public final class SoulAscensionClientConfig {
+    static final String DEFAULT_HIDDEN_ATTRIBUTES = String.join(",",
+        "minecraft:generic.max_absorption",
+        "minecraft:generic.flying_speed",
+        "minecraft:generic.explosion_knockback_resistance",
+        "minecraft:player.block_break_speed",
+        "minecraft:generic.fall_damage_multiplier",
+        "minecraft:player.sweeping_damage_ratio",
+        "minecraft:generic.safe_fall_distance",
+        "minecraft:player.mining_efficiency",
+        "minecraft:player.sneaking_speed",
+        "minecraft:player.submerged_mining_speed",
+        "minecraft:generic.burning_time",
+        "minecraft:generic.gravity",
+        "minecraft:generic.jump_strength",
+        "minecraft:generic.movement_efficiency",
+        "minecraft:generic.scale",
+        "minecraft:generic.water_movement_efficiency",
+        "minecraft:generic.oxygen_bonus",
+        "neoforge:creative_flight",
+        "neoforge:name_tag_distance",
+        "neoforge:nametag_distance",
+        "neoforge:swim_speed",
+        "apothic_attributes:creative_flight",
+        "apothic_attributes:mining_speed");
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.BooleanValue SHOW_ATTRIBUTE_NAMESPACES;
     public static final ModConfigSpec.ConfigValue<String> HIDDEN_ATTRIBUTES;
@@ -26,30 +50,7 @@ public final class SoulAscensionClientConfig {
             "Comma-separated attribute IDs hidden from the dynamic attribute page.",
             "Entries in visibleAttributes override this list.",
             "The defaults hide low-value engine/movement internals and unsupported creative-only values.")
-            .define("hiddenAttributes", String.join(",",
-                "minecraft:generic.max_absorption",
-                "minecraft:generic.flying_speed",
-                "minecraft:generic.explosion_knockback_resistance",
-                "minecraft:player.block_break_speed",
-                "minecraft:generic.fall_damage_multiplier",
-                "minecraft:player.sweeping_damage_ratio",
-                "minecraft:generic.safe_fall_distance",
-                "minecraft:player.mining_efficiency",
-                "minecraft:player.sneaking_speed",
-                "minecraft:player.submerged_mining_speed",
-                "minecraft:generic.burning_time",
-                "minecraft:generic.gravity",
-                "minecraft:generic.jump_strength",
-                "minecraft:generic.movement_efficiency",
-                "minecraft:generic.scale",
-                "minecraft:generic.water_movement_efficiency",
-                "minecraft:generic.oxygen_bonus",
-                "neoforge:creative_flight",
-                "neoforge:name_tag_distance",
-                "neoforge:nametag_distance",
-                "neoforge:swim_speed",
-                "apothic_attributes:creative_flight",
-                "apothic_attributes:mining_speed"));
+            .define("hiddenAttributes", DEFAULT_HIDDEN_ATTRIBUTES);
         VISIBLE_ATTRIBUTES = builder.comment(
             "Comma-separated attribute IDs that must be shown even if they are in hiddenAttributes.",
             "Default: empty. Add minecraft:generic.oxygen_bonus here to opt in to Oxygen Bonus.")
@@ -66,16 +67,17 @@ public final class SoulAscensionClientConfig {
     private SoulAscensionClientConfig() {}
 
     public static boolean hiddenAttribute(ResourceLocation id) {
-        if (contains(VISIBLE_ATTRIBUTES.get(), id)) return false;
-        return contains(HIDDEN_ATTRIBUTES.get(), id);
+        SoulAscensionClientRuntimeConfig config = SoulAscensionClientConfigManager.current();
+        if (contains(config.visibleAttributes(), id)) return false;
+        return contains(config.hiddenAttributes(), id);
     }
 
     public static boolean visibleOverride(ResourceLocation id) {
-        return contains(VISIBLE_ATTRIBUTES.get(), id);
+        return contains(SoulAscensionClientConfigManager.current().visibleAttributes(), id);
     }
 
     public static Optional<String> categoryOverride(ResourceLocation id) {
-        for (String entry : ATTRIBUTE_CATEGORIES.get().split(";")) {
+        for (String entry : SoulAscensionClientConfigManager.current().attributeCategories().split(";")) {
             String[] parts = entry.trim().split("=", 2);
             if (parts.length == 2 && parts[0].trim().equals(id.toString())) {
                 String category = parts[1].trim().toLowerCase(Locale.ROOT);
