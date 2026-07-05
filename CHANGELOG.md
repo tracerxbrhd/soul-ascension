@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.2 - 2026-07-05
+
+- Fixed stat-upgrade tooltips for optional mod attributes that do not yet have a synchronized client instance.
+- Intelligence now previews configured Iron's Spells and other available integration rewards before the first point is confirmed.
+- Kept integration-only tooltip lines hidden when their providing mod or attribute registry entry is unavailable.
+
 ## 1.2.1 - 2026-07-05
 
 - Separated the Soul Lens inventory icon from its Blockbench model.

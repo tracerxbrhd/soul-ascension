@@ -51,7 +51,10 @@ public final class StatAttributePreview {
             Holder<Attribute> holder = BuiltInRegistries.ATTRIBUTE.getHolder(entry.getKey()).orElse(null);
             if (holder == null) continue;
             AttributeInstance instance = player.getAttribute(holder);
-            if (instance == null) continue;
+            // Optional attributes may not have a client-side instance until their first
+            // non-default modifier is synchronized. Use the registered default value so
+            // the +1 tooltip can still describe the reward before any point is allocated.
+            if (instance == null) instance = new AttributeInstance(holder, ignored -> {});
 
             double beforeValue = value(player, progress, entry.getKey(), instance);
             double afterValue = value(player, withStatDelta(progress, stat, delta), entry.getKey(), instance);
