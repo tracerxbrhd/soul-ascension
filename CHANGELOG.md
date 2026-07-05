@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1 - 2026-07-05
+
+- Separated the Soul Lens inventory icon from its Blockbench model.
+- Kept the generated 2D icon in inventories, creative tabs, recipe viewers, item frames and dropped-item rendering.
+- Added a client-only context-aware baked model that selects the 3D Soul Lens only in first-person, third-person and spyglass `HEAD` rendering.
+
 ## 1.2.0 - 2026-07-05
 
 - Fixed startup with an empty config directory by separating NeoForge config specs from safe runtime snapshots.

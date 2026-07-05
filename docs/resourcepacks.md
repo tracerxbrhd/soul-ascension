@@ -45,12 +45,33 @@ The Soul Lens uses standard resource-pack paths:
 
 - `assets/soul_ascension/textures/item/soul_lens.png`
 - `assets/soul_ascension/models/item/soul_lens.json`
+- `assets/soul_ascension/textures/item/soul_lens_in_hand.png`
+- `assets/soul_ascension/models/item/soul_lens_in_hand.json`
 
-The runtime JSON contains exported three-dimensional geometry and independent transforms for GUI, ground, fixed,
-first-person, third-person and `HEAD` contexts. The `HEAD` transform is important because `SpyglassItem` and the
-`SPYGLASS_SCOPE` item ability use that context during the vanilla spyglass animation. The `gui` transform keeps the
-same model readable as an inventory icon.
+The primary `soul_lens.json` is a generated 2D item model. Inventory, creative tabs, recipe viewers, dropped items
+and item frames therefore use the normal `soul_lens.png` icon. A client-side baked-model wrapper selects
+`soul_lens_in_hand.json` only for first-person, third-person and `HEAD` render contexts.
 
-A resource pack can replace either file. A replacement model must reference a runtime texture under the
-`soul_ascension` namespace and should retain all display contexts above. Blockbench `.bbmodel` files are editable
-design sources only; Minecraft loads the exported item-model JSON, not the `.bbmodel` file.
+The in-hand JSON contains exported three-dimensional geometry and independent transforms for first-person,
+third-person and `HEAD` contexts. The `HEAD` transform is important because `SpyglassItem` and the `SPYGLASS_SCOPE`
+item ability use that context during the vanilla spyglass animation.
+
+### Replacing only the 3D Soul Lens
+
+To replace the Blockbench model without changing the inventory icon, replace only these two files:
+
+- `assets/soul_ascension/models/item/soul_lens_in_hand.json`
+- `assets/soul_ascension/textures/item/soul_lens_in_hand.png`
+
+Export the Blockbench project as a Java block/item model, copy the exported JSON to the first path and its texture to
+the second path. In the exported JSON, every runtime texture reference must resolve to
+`soul_ascension:item/soul_lens_in_hand`. Preserve or retune the `firstperson_*`, `thirdperson_*` and `head` display
+transforms; these control how the model sits in the player's hands and at the eye during use.
+
+Do not replace `models/item/soul_lens.json` or `textures/item/soul_lens.png`: those two files are the independent 2D
+inventory icon. A resource pack can use the same paths, and `F3+T` reloads the changed model and texture in-game.
+
+A resource pack can replace either of the two in-hand files. A replacement model must reference a runtime texture under the
+`soul_ascension` namespace and should retain all display contexts above. Keep both runtime model paths when replacing
+the assets so the context-aware wrapper can resolve them. Blockbench `.bbmodel` files are editable design sources
+only; Minecraft loads the exported item-model JSON, not the `.bbmodel` file.
