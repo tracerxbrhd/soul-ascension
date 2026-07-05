@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.3 - 2026-07-05
+
+- Changed Soul Lens model and textures
+
 ## 1.2.2 - 2026-07-05
 
 - Fixed stat-upgrade tooltips for optional mod attributes that do not yet have a synchronized client instance.

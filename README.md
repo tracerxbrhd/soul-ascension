@@ -9,7 +9,7 @@ SOUL-ASCENSION is a configurable RPG progression mod. Dealing valid damage advan
 - Java 21
 - U-API 1.2.0 or newer
 
-Current version: 1.2.2. Mod ID: `soul_ascension`.
+Current version: 1.2.3. Mod ID: `soul_ascension`.
 
 ## Character progression
 
@@ -36,4 +36,4 @@ There is no custom in-game configuration editor. See [`docs/config.md`](docs/con
 
 Resource-pack paths, including the replaceable Soul Lens model and texture, are documented in [`docs/resourcepacks.md`](docs/resourcepacks.md). Titles and optional integrations are documented in [`docs/TITLES_AND_INTEGRATIONS.md`](docs/TITLES_AND_INTEGRATIONS.md).
 
-Build on Windows with `gradlew.bat build`. The resulting artifact is `build/libs/soul-ascension-1.2.2.jar`.
+Build on Windows with `gradlew.bat build`. The resulting artifact is `build/libs/soul-ascension-1.2.3.jar`.
