@@ -17,7 +17,7 @@ SOUL ASCENSION uses the namespace `soul_ascension`. Resource packs can replace t
 - `assets/soul_ascension/textures/gui/sprites/character/stat_plus.png`
 - `assets/soul_ascension/textures/gui/sprites/character/stat_minus.png`
 
-The `.png.mcmeta` files define nine-slice scaling. Preserve their logical size and border values when changing texture dimensions.
+The character `.png.mcmeta` files define nine-slice scaling. Preserve their logical size and border values when changing texture dimensions.
 
 ## Character-screen inventory tabs
 
@@ -36,6 +36,19 @@ These sprites are used only while the SOUL ASCENSION screen is open. Vanilla inv
 - `assets/soul_ascension/textures/item/*.png`
 - `assets/soul_ascension/branding/icon.png`
 - `assets/soul_ascension/branding/banner.png`
+
+Black Book icons are normal generated item models:
+
+- `assets/soul_ascension/models/item/black_book_strength.json`
+- `assets/soul_ascension/models/item/black_book_endurance.json`
+- `assets/soul_ascension/models/item/black_book_agility.json`
+- `assets/soul_ascension/models/item/black_book_intelligence.json`
+- `assets/soul_ascension/models/item/black_book_perception.json`
+- `assets/soul_ascension/textures/item/black_book_strength.png`
+- `assets/soul_ascension/textures/item/black_book_endurance.png`
+- `assets/soul_ascension/textures/item/black_book_agility.png`
+- `assets/soul_ascension/textures/item/black_book_intelligence.png`
+- `assets/soul_ascension/textures/item/black_book_perception.png`
 
 The NeoForge mod-list image is the root JAR resource `soul_ascension_banner.png`. Resource packs cannot reliably replace root metadata resources; replace it only in a repackaged mod JAR.
 

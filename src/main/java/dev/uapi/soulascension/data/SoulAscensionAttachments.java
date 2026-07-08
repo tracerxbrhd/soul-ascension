@@ -15,7 +15,7 @@ public final class SoulAscensionAttachments {
         DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, SoulAscensionMod.MOD_ID);
 
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<PlayerProgress>> PROGRESS = TYPES.register(
-        "player_progress", () -> AttachmentType.builder(PlayerProgress::initial).serialize(PlayerProgress.CODEC)
+        "character_progress_v130", () -> AttachmentType.builder(PlayerProgress::initial).serialize(PlayerProgress.CODEC)
             .copyOnDeath().sync((holder, player) -> holder == player, PlayerProgress.STREAM_CODEC).build());
 
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<DamageLedger>> DAMAGE_LEDGER = TYPES.register(

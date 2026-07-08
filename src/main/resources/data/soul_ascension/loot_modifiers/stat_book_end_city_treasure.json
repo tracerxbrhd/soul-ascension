@@ -1,0 +1,15 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "soul_ascension:stat_book_loot_enabled"
+    }
+  ],
+  "type": "neoforge:add_table",
+  "conditions": [
+    {
+      "condition": "neoforge:loot_table_id",
+      "loot_table_id": "minecraft:chests/end_city_treasure"
+    }
+  ],
+  "table": "soul_ascension:inject/stat_book_end_city_treasure"
+}

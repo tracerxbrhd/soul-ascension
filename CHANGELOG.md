@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.3.0 - 2026-07-06
+
+- Breaking update: replaced character progression storage with schema 130; old progression/config data may not be compatible and no migration is performed.
+- Removed the experimental tree-progression system before release and returned the mod focus to character levels, attribute points, titles, Soul Lens and respec items.
+- Removed the related packets, player data, datapack definitions, tab UI, resources, config sections and admin commands.
+- Removed old tree-progression modifier cleanup entirely; 1.3.0 worlds are intentionally not compatible with older development saves.
+- Fixed maximum-level presentation: the level bar is now full and displays localized `MAX LEVEL` using the synchronized runtime `max_level` value.
+- Optimized Character Screen and Soul Lens UI paths by keeping attribute/profile snapshots cached, removing the removed tree's heavy map render path, avoiding attribute model refreshes on non-attribute tabs and disabling the 3D player preview by default.
+- Restored stat-specific Black Books for Strength, Endurance, Agility, Intelligence and Perception. Books directly increase the matching stat and immediately apply configured attribute rewards.
+- Added data-driven NeoForge loot modifiers for stat Black Books in rare vanilla structure chests.
+- Reorganized generated config keys and removed obsolete tree-progression settings.
+- Requires U-API 1.3.0 for server-controlled inventory-tab visibility.
+
 ## 1.2.3 - 2026-07-05
 
 - Changed Soul Lens model and textures

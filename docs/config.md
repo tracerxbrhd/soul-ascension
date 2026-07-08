@@ -14,6 +14,22 @@ All files are edited manually while the game is stopped. The mod does not provid
 
 Runtime code reads immutable snapshots populated after NeoForge loads each TOML spec, so it does not access config values prematurely. Missing files are generated with defaults.
 
-`attribute_rewards.json` is validated by a dedicated loader. A malformed file is renamed to `attribute_rewards.json.broken.<timestamp>.bak` and replaced with valid defaults. On first launch without the JSON file, legacy `[attribute_rewards]` entries from `server.toml` are migrated automatically.
+`attribute_rewards.json` is validated by a dedicated loader. A malformed file is renamed to `attribute_rewards.json.broken.<timestamp>.bak` and replaced with valid defaults. Version 1.3.0 does not migrate legacy progression or configuration formats.
+
+## TOML layout
+
+`server.toml` is grouped by gameplay concern:
+
+- `[general]` — respawn health behavior, title nameplate display and debug item exposure.
+- `[progression]` — maximum level and damage-XP requirement scaling.
+- `[attribute_points]` — point allocation caps, administrative decreases and respec loss rules.
+- `[anti_abuse]` — repeated-target XP farming protection.
+- `[items.soul_lens]` — Soul Lens availability, range and overlay/network timing.
+- `[loot]` — master enable for stat Black Book loot injection.
+
+`client.toml` contains only local presentation:
+
+- `[attribute_display]` — visible/hidden attribute filters and category overrides.
+- `[character_screen]` — local Character Screen rendering options. The 3D player preview is disabled by default because it uses Minecraft's inventory entity renderer every frame.
 
 See [`ATTRIBUTE_REWARDS.md`](ATTRIBUTE_REWARDS.md) for the JSON schema and supported operations.

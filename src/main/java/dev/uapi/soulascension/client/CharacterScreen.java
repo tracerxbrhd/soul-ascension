@@ -49,6 +49,7 @@ public class CharacterScreen extends Screen implements UApiTabHost {
             return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
         }
     }
+    private record PublicAttributeRow(Component name, Component value) {}
 
     private static final ResourceLocation ATTRIBUTES_ICON = SoulAscensionMod.id("textures/gui/icons/attributes.png");
     private static final ResourceLocation TITLES_ICON = SoulAscensionMod.id("textures/gui/icons/title.png");
@@ -76,6 +77,7 @@ public class CharacterScreen extends Screen implements UApiTabHost {
     private PlayerProgress progress = PlayerProgress.initial();
     private TitleProgress titles = TitleProgress.initial();
     private final PublicProfileData publicProfile;
+    private final List<PublicAttributeRow> publicAttributeRows;
     private final CharacterScreenMode mode;
     private final GameProfile snapshotProfile;
     private final Supplier<PlayerSkin> snapshotSkin;
@@ -119,9 +121,11 @@ public class CharacterScreen extends Screen implements UApiTabHost {
             progress = new PlayerProgress(publicProfile.level(), 0, 0, 0, publicProfile.strength(),
                 publicProfile.endurance(), publicProfile.agility(), publicProfile.intelligence(),
                 publicProfile.perception());
+            publicAttributeRows = buildPublicAttributeRows(publicProfile);
         } else {
             snapshotProfile = null;
             snapshotSkin = null;
+            publicAttributeRows = List.of();
         }
     }
 
@@ -234,6 +238,10 @@ public class CharacterScreen extends Screen implements UApiTabHost {
         page = value; integrationId = integration; scroll = 0; attributeListScroll = 0;
         attributeDetailScroll = 0; titleHitboxes.clear(); attributeHitboxes.clear();
         setFocused(null);
+        if (!isPublicProfile() && page == Page.ATTRIBUTES && minecraft != null && minecraft.player != null) {
+            attributeViewModel.forceRefresh();
+            attributeViewModel.tick(minecraft.player, previewProgress());
+        }
     }
 
     private void refresh() {
@@ -253,13 +261,13 @@ public class CharacterScreen extends Screen implements UApiTabHost {
     }
 
     private void refreshPreviewModel() {
-        if (!isPublicProfile() && minecraft != null && minecraft.player != null)
+        if (!isPublicProfile() && page == Page.ATTRIBUTES && minecraft != null && minecraft.player != null)
             attributeViewModel.tick(minecraft.player, previewProgress());
     }
 
     @Override public void tick() {
         refresh();
-        if (!isPublicProfile() && minecraft != null && minecraft.player != null)
+        if (!isPublicProfile() && page == Page.ATTRIBUTES && minecraft != null && minecraft.player != null)
             attributeViewModel.tick(minecraft.player, previewProgress());
     }
 
@@ -312,12 +320,17 @@ public class CharacterScreen extends Screen implements UApiTabHost {
         int modelBottom = headerBottom - 3;
         int availableModelHeight = Math.max(20, Math.min(125, modelBottom - modelTop));
         int modelWidth = Math.max(28, Math.min(modelColumnWidth - 12, (availableModelHeight * 3) / 4));
-        LivingEntity displayedPlayer = displayedPlayer();
+        boolean showPlayerPreview = SoulAscensionClientConfigManager.current().showPlayerPreview();
+        LivingEntity displayedPlayer = showPlayerPreview ? displayedPlayer() : null;
         if (displayedPlayer != null) {
             int modelScale = Math.max(12, Math.min(42, 12 + availableModelHeight / 4));
             int modelLeft = x + Math.max(5, (modelColumnWidth - modelWidth) / 2);
             InventoryScreen.renderEntityInInventoryFollowsMouse(graphics, modelLeft, modelTop,
                 modelLeft + modelWidth, modelBottom, modelScale, 0.0625F, mouseX, mouseY, displayedPlayer);
+        } else if (!isPublicProfile() && minecraft != null && minecraft.player != null) {
+            int faceSize = Math.max(24, Math.min(48, availableModelHeight / 2));
+            PlayerFaceRenderer.draw(graphics, minecraft.player.getSkin(), x + (modelColumnWidth - faceSize) / 2,
+                modelTop + Math.max(1, (availableModelHeight - faceSize) / 2 - 6), faceSize);
         } else if (isPublicProfile() && snapshotSkin != null) {
             int faceSize = Math.max(24, Math.min(48, availableModelHeight / 2));
             PlayerFaceRenderer.draw(graphics, snapshotSkin.get(), x + (modelColumnWidth - faceSize) / 2,
@@ -389,20 +402,34 @@ public class CharacterScreen extends Screen implements UApiTabHost {
             x + 10, y + 9, theme.text(), false);
         graphics.fill(x + 10, y + 22, x + width - 10, y + 23, theme.divider());
         int rowY = y + 30 - scroll;
-        graphics.enableScissor(x + 4, y + 25, x + width - 4, y + height - 4);
-        for (PublicProfileData.PublicAttribute attribute : publicProfile.attributes()) {
-            var holder = BuiltInRegistries.ATTRIBUTE.getHolder(attribute.id()).orElse(null);
-            if (holder == null) continue;
+        int clipTop = y + 25;
+        int clipBottom = y + height - 4;
+        graphics.enableScissor(x + 4, clipTop, x + width - 4, clipBottom);
+        for (PublicAttributeRow attribute : publicAttributeRows) {
+            if (rowY + 20 < clipTop) {
+                rowY += 23;
+                continue;
+            }
+            if (rowY > clipBottom) break;
             drawSurface(graphics, SECTION_SPRITE, x + 9, rowY, width - 18, 20);
-            Component name = Component.translatable(holder.value().getDescriptionId());
-            Component value = DynamicAttributeView.formatValue(attribute.id(), holder.value(), attribute.value());
-            graphics.drawString(font, trim(name, Math.max(30, width - 110)), x + 15, rowY + 6,
+            graphics.drawString(font, trim(attribute.name(), Math.max(30, width - 110)), x + 15, rowY + 6,
                 theme.text(), false);
-            graphics.drawString(font, value, x + width - 15 - font.width(value), rowY + 6,
+            graphics.drawString(font, attribute.value(), x + width - 15 - font.width(attribute.value()), rowY + 6,
                 theme.valueText(), false);
             rowY += 23;
         }
         graphics.disableScissor();
+    }
+
+    private static List<PublicAttributeRow> buildPublicAttributeRows(PublicProfileData profile) {
+        List<PublicAttributeRow> rows = new ArrayList<>();
+        for (PublicProfileData.PublicAttribute attribute : profile.attributes()) {
+            var holder = BuiltInRegistries.ATTRIBUTE.getHolder(attribute.id()).orElse(null);
+            if (holder == null) continue;
+            rows.add(new PublicAttributeRow(Component.translatable(holder.value().getDescriptionId()),
+                DynamicAttributeView.formatValue(attribute.id(), holder.value(), attribute.value())));
+        }
+        return List.copyOf(rows);
     }
 
     private void renderAttributes(GuiGraphics graphics, int x, int y, int width, int height) {
@@ -426,15 +453,24 @@ public class CharacterScreen extends Screen implements UApiTabHost {
     private void renderAttributeList(GuiGraphics graphics, int x, int y, int width, int height, UiTheme theme) {
         attributeHitboxes.clear();
         int lineY = y + 5 - attributeListScroll;
-        graphics.enableScissor(x + 2, y + 2, x + width - 2, y + height - 2);
+        int clipTop = y + 2;
+        int clipBottom = y + height - 2;
+        graphics.enableScissor(x + 2, clipTop, x + width - 2, clipBottom);
         for (AttributeViewModel.Group group : attributeViewModel.groups()) {
             int headingY = lineY;
-            graphics.fill(x + 5, headingY + 5, x + width / 2 - 18, headingY + 6, theme.divider());
-            graphics.fill(x + width / 2 + 18, headingY + 5, x + width - 5, headingY + 6, theme.divider());
-            graphics.drawCenteredString(font, trim(group.category().title(), Math.max(20, width - 42)),
-                x + width / 2, headingY + 1, theme.accent());
+            if (headingY + 14 >= clipTop && headingY <= clipBottom) {
+                graphics.fill(x + 5, headingY + 5, x + width / 2 - 18, headingY + 6, theme.divider());
+                graphics.fill(x + width / 2 + 18, headingY + 5, x + width - 5, headingY + 6, theme.divider());
+                graphics.drawCenteredString(font, trim(group.category().title(), Math.max(20, width - 42)),
+                    x + width / 2, headingY + 1, theme.accent());
+            }
             lineY += 15;
             for (AttributeViewModel.DisplayEntry entry : group.entries()) {
+                if (lineY + 15 < clipTop) {
+                    lineY += 16;
+                    continue;
+                }
+                if (lineY > clipBottom) break;
                 boolean selected = entry.id().equals(attributeViewModel.selectedId());
                 if (selected) graphics.blitSprite(SoulAscensionMod.id("character/attribute_selected"),
                     x + 4, lineY, width - 8, 15);
@@ -465,7 +501,9 @@ public class CharacterScreen extends Screen implements UApiTabHost {
         int lineY = y + 7 - attributeDetailScroll;
         int textX = x + 8;
         int textWidth = Math.max(20, width - 16);
-        graphics.enableScissor(x + 2, y + 2, x + width - 2, y + height - 2);
+        int clipTop = y + 2;
+        int clipBottom = y + height - 2;
+        graphics.enableScissor(x + 2, clipTop, x + width - 2, clipBottom);
         graphics.drawString(font, trim(entry.name(), textWidth), textX, lineY, theme.accent(), false);
         lineY += 14;
         boolean showId = SoulAscensionClientConfigManager.current().showAttributeNamespaces()
@@ -485,7 +523,8 @@ public class CharacterScreen extends Screen implements UApiTabHost {
             Component.translatable("screen.soul_ascension.attribute.category"), entry.category().title(), theme);
         lineY += 3;
         for (net.minecraft.util.FormattedCharSequence part : font.split(entry.description(), textWidth)) {
-            graphics.drawString(font, part, textX, lineY, theme.text(), false);
+            if (lineY + 10 >= clipTop && lineY <= clipBottom)
+                graphics.drawString(font, part, textX, lineY, theme.text(), false);
             lineY += 11;
         }
         lineY += 7;
@@ -498,6 +537,12 @@ public class CharacterScreen extends Screen implements UApiTabHost {
             lineY, theme.valueText(), false);
         lineY += 16;
         for (AttributeViewModel.SourceEntry source : entry.sources()) {
+            int rowHeight = showId || !source.icon().isEmpty() ? 24 : 16;
+            if (lineY + rowHeight < clipTop) {
+                lineY += rowHeight;
+                continue;
+            }
+            if (lineY > clipBottom) break;
             int sourceX = textX;
             if (!source.icon().isEmpty()) {
                 graphics.renderItem(source.icon(), sourceX, lineY - 2);
@@ -511,7 +556,7 @@ public class CharacterScreen extends Screen implements UApiTabHost {
                 source.amount() >= 0 ? theme.positiveText() : 0xFFFF7777, false);
             if (showId) graphics.drawString(font, trim(Component.literal(source.modifierId().toString()), textWidth - 7),
                 sourceX, lineY + 11, theme.mutedText(), false);
-            lineY += showId || !source.icon().isEmpty() ? 24 : 16;
+            lineY += rowHeight;
         }
         graphics.disableScissor();
     }
@@ -536,12 +581,19 @@ public class CharacterScreen extends Screen implements UApiTabHost {
         graphics.fill(x + 10, y + 22, x + width - 10, y + 23, theme.divider());
         titleHitboxes.clear();
         int cardY = y + 30 - scroll;
-        graphics.enableScissor(x + 4, y + 25, x + width - 4, y + height - 4);
+        int clipTop = y + 25;
+        int clipBottom = y + height - 4;
+        graphics.enableScissor(x + 4, clipTop, x + width - 4, clipBottom);
         for (ClientTitleDefinition definition : ClientTitleCatalog.all()) {
             boolean unlocked = titles.unlocked().contains(definition.id());
             if (definition.hidden() && !unlocked) continue;
             boolean selected = titles.activeTitle().equals(definition.id());
             int cardHeight = 39;
+            if (cardY + cardHeight < clipTop) {
+                cardY += cardHeight + 5;
+                continue;
+            }
+            if (cardY > clipBottom) break;
             drawSurface(graphics, SECTION_SPRITE, x + 9, cardY, width - 18, cardHeight);
             if (selected) graphics.renderOutline(x + 10, cardY + 1, width - 20, cardHeight - 2, theme.accent());
             graphics.blit(definition.icon(), x + 14, cardY + 4, 0, 0, 30, 30, 32, 32);
@@ -567,12 +619,18 @@ public class CharacterScreen extends Screen implements UApiTabHost {
         graphics.fill(x + 10, y + 22, x + width - 10, y + 23, theme.divider());
         if (selected == null || minecraft == null || minecraft.player == null) return;
         int lineY = y + 34 - scroll;
-        graphics.enableScissor(x + 4, y + 25, x + width - 4, y + height - 4);
+        int clipTop = y + 25;
+        int clipBottom = y + height - 4;
+        graphics.enableScissor(x + 4, clipTop, x + width - 4, clipBottom);
         for (Component line : selected.lines().apply(minecraft.player)) {
             for (net.minecraft.util.FormattedCharSequence part : font.split(line, width - 24)) {
-                graphics.drawString(font, part, x + 12, lineY, theme.text(), false); lineY += 13;
+                if (lineY + 10 >= clipTop && lineY <= clipBottom)
+                    graphics.drawString(font, part, x + 12, lineY, theme.text(), false);
+                lineY += 13;
+                if (lineY > clipBottom + 16) break;
             }
             lineY += 3;
+            if (lineY > clipBottom + 16) break;
         }
         graphics.disableScissor();
     }
@@ -668,14 +726,18 @@ public class CharacterScreen extends Screen implements UApiTabHost {
     }
 
     private void renderProgressBar(GuiGraphics graphics, int x, int y, int width) {
+        boolean maximumReached = ClientProgressionRules.maxLevel() > 0
+            && progress.level() >= ClientProgressionRules.maxLevel();
         double required = progress.requiredDamage() > 0 ? progress.requiredDamage() : 1.0;
-        double ratio = Math.max(0.0, Math.min(1.0, progress.damageProgress() / required));
+        double ratio = maximumReached ? 1.0
+            : Math.max(0.0, Math.min(1.0, progress.damageProgress() / required));
         UiTheme theme = theme();
         graphics.blitSprite(PROGRESS_BACKGROUND_SPRITE, x, y, width, 12);
         int filledWidth = (int) ((width - 4) * ratio);
         if (filledWidth > 0) graphics.blitSprite(PROGRESS_FILL_SPRITE, x + 2, y + 2, filledWidth, 8);
-        Component text = Component.translatable("screen.soul_ascension.progress_values",
-            formatProgress(progress.damageProgress()), formatProgress(required));
+        Component text = maximumReached ? Component.translatable("screen.soul_ascension.max_level")
+            : Component.translatable("screen.soul_ascension.progress_values",
+                formatProgress(progress.damageProgress()), formatProgress(required));
         graphics.drawCenteredString(font, trim(text, width - 4), x + width / 2, y + 2, theme.text());
     }
 
@@ -800,7 +862,7 @@ public class CharacterScreen extends Screen implements UApiTabHost {
     }
 
     private int maxPublicAttributeScroll() {
-        return Math.max(0, publicProfile.attributes().size() * 23 - Math.max(1, panelHeight() - 76));
+        return Math.max(0, publicAttributeRows.size() * 23 - Math.max(1, panelHeight() - 76));
     }
 
     private int maxAttributeListScroll() {

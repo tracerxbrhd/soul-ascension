@@ -6,13 +6,16 @@ import dev.uapi.creative.UApiCreativeTabs;
 import dev.uapi.command.UApiCommandRegistry;
 import dev.uapi.soulascension.command.SoulAscensionCommands;
 import dev.uapi.soulascension.condition.SoulLensEnabledCondition;
+import dev.uapi.soulascension.condition.StatBookLootEnabledCondition;
 import dev.uapi.soulascension.config.SoulAscensionClientConfig;
 import dev.uapi.soulascension.config.SoulAscensionServerConfig;
 import dev.uapi.soulascension.config.SoulAscensionConfigManager;
 import dev.uapi.soulascension.config.SoulAscensionClientConfigManager;
 import dev.uapi.soulascension.config.AttributeRewardsConfig;
 import dev.uapi.soulascension.data.SoulAscensionAttachments;
+import dev.uapi.soulascension.data.Stat;
 import dev.uapi.soulascension.item.AmnesiaScrollItem;
+import dev.uapi.soulascension.item.BlackBookItem;
 import dev.uapi.soulascension.item.DebugProgressItem;
 import dev.uapi.soulascension.item.SoulBadgeItem;
 import dev.uapi.soulascension.item.WitheredMemoryPotionItem;
@@ -49,6 +52,8 @@ public final class SoulAscensionMod {
         DeferredRegister.create(NeoForgeRegistries.CONDITION_SERIALIZERS, MOD_ID);
     public static final DeferredHolder<MapCodec<? extends ICondition>, MapCodec<? extends ICondition>> SOUL_LENS_ENABLED_CONDITION =
         CONDITIONS.register("soul_lens_enabled", () -> SoulLensEnabledCondition.CODEC);
+    public static final DeferredHolder<MapCodec<? extends ICondition>, MapCodec<? extends ICondition>> STAT_BOOK_LOOT_ENABLED_CONDITION =
+        CONDITIONS.register("stat_book_loot_enabled", () -> StatBookLootEnabledCondition.CODEC);
     public static final DeferredItem<Item> AMNESIA_SCROLL = ITEMS.register("amnesia_scroll",
         () -> new AmnesiaScrollItem(new Item.Properties().stacksTo(16)));
     public static final DeferredItem<Item> SOUL_BADGE = ITEMS.register("soul_badge",
@@ -57,6 +62,16 @@ public final class SoulAscensionMod {
         () -> new WitheredMemoryPotionItem(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<Item> SOUL_LENS = ITEMS.register("soul_lens",
         () -> new SoulLensItem(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)));
+    public static final DeferredItem<Item> BLACK_BOOK_STRENGTH = ITEMS.register("black_book_strength",
+        () -> new BlackBookItem(Stat.STRENGTH, new Item.Properties().stacksTo(16).rarity(Rarity.RARE)));
+    public static final DeferredItem<Item> BLACK_BOOK_ENDURANCE = ITEMS.register("black_book_endurance",
+        () -> new BlackBookItem(Stat.ENDURANCE, new Item.Properties().stacksTo(16).rarity(Rarity.RARE)));
+    public static final DeferredItem<Item> BLACK_BOOK_AGILITY = ITEMS.register("black_book_agility",
+        () -> new BlackBookItem(Stat.AGILITY, new Item.Properties().stacksTo(16).rarity(Rarity.RARE)));
+    public static final DeferredItem<Item> BLACK_BOOK_INTELLIGENCE = ITEMS.register("black_book_intelligence",
+        () -> new BlackBookItem(Stat.INTELLIGENCE, new Item.Properties().stacksTo(16).rarity(Rarity.RARE)));
+    public static final DeferredItem<Item> BLACK_BOOK_PERCEPTION = ITEMS.register("black_book_perception",
+        () -> new BlackBookItem(Stat.PERCEPTION, new Item.Properties().stacksTo(16).rarity(Rarity.RARE)));
     public static final DeferredItem<Item> DEBUG_LEVEL_UP = ITEMS.register("debug_level_up",
         () -> new DebugProgressItem(DebugProgressItem.Action.LEVEL_UP, new Item.Properties().stacksTo(1)));
     public static final DeferredItem<Item> DEBUG_ADD_POINT = ITEMS.register("debug_add_point",
@@ -78,6 +93,11 @@ public final class SoulAscensionMod {
         CREATIVE_TAB.add(id("withered_memory_potion"), 20);
         CREATIVE_TAB.add(id("soul_lens"), 35,
             () -> SoulAscensionConfigManager.current().soulLensEnabled());
+        CREATIVE_TAB.add(id("black_book_strength"), 50);
+        CREATIVE_TAB.add(id("black_book_endurance"), 51);
+        CREATIVE_TAB.add(id("black_book_agility"), 52);
+        CREATIVE_TAB.add(id("black_book_intelligence"), 53);
+        CREATIVE_TAB.add(id("black_book_perception"), 54);
         CREATIVE_TAB.add(id("debug_level_up"), 200,
             () -> SoulAscensionConfigManager.current().debugItemsEnabled());
         CREATIVE_TAB.add(id("debug_add_point"), 201,
@@ -88,7 +108,7 @@ public final class SoulAscensionMod {
         modBus.addListener(this::onConfigLoading);
         modBus.addListener(this::onConfigReload);
         modBus.addListener(this::commonSetup);
-        AttributeRewardsConfig.bootstrapAndMigrate();
+        AttributeRewardsConfig.bootstrapDefaults();
         container.registerConfig(ModConfig.Type.COMMON, SoulAscensionServerConfig.SPEC, "uapi/soul-ascension/server.toml");
         container.registerConfig(ModConfig.Type.CLIENT, SoulAscensionClientConfig.SPEC, "uapi/soul-ascension/client.toml");
         NeoForge.EVENT_BUS.register(SoulAscensionEvents.class);

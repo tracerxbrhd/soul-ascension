@@ -5,9 +5,11 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 
-public record PlayerProgress(int level, double damageProgress, double requiredDamage, int unspentPoints,
+public record PlayerProgress(int schemaVersion, int level, double damageProgress, double requiredDamage, int unspentPoints,
                              int strength, int endurance, int agility, int intelligence, int perception) {
+    public static final int SCHEMA_VERSION = 130;
     public static final Codec<PlayerProgress> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+        Codec.INT.fieldOf("schema_version").forGetter(PlayerProgress::schemaVersion),
         Codec.INT.optionalFieldOf("level", 0).forGetter(PlayerProgress::level),
         Codec.DOUBLE.optionalFieldOf("damageProgress", 0.0).forGetter(PlayerProgress::damageProgress),
         Codec.DOUBLE.optionalFieldOf("requiredDamage", 0.0).forGetter(PlayerProgress::requiredDamage),
@@ -21,22 +23,35 @@ public record PlayerProgress(int level, double damageProgress, double requiredDa
 
     public static final StreamCodec<RegistryFriendlyByteBuf, PlayerProgress> STREAM_CODEC = new StreamCodec<>() {
         @Override public PlayerProgress decode(RegistryFriendlyByteBuf buffer) {
-            return new PlayerProgress(buffer.readVarInt(), buffer.readDouble(), buffer.readDouble(), buffer.readVarInt(),
+            return new PlayerProgress(buffer.readVarInt(), buffer.readVarInt(), buffer.readDouble(), buffer.readDouble(), buffer.readVarInt(),
                 buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt());
         }
         @Override public void encode(RegistryFriendlyByteBuf buffer, PlayerProgress value) {
-            buffer.writeVarInt(value.level()); buffer.writeDouble(value.damageProgress()); buffer.writeDouble(value.requiredDamage());
+            buffer.writeVarInt(value.schemaVersion()); buffer.writeVarInt(value.level());
+            buffer.writeDouble(value.damageProgress()); buffer.writeDouble(value.requiredDamage());
             buffer.writeVarInt(value.unspentPoints()); buffer.writeVarInt(value.strength());
             buffer.writeVarInt(value.endurance()); buffer.writeVarInt(value.agility());
             buffer.writeVarInt(value.intelligence()); buffer.writeVarInt(value.perception());
         }
     };
 
+    public PlayerProgress(int level, double damageProgress, double requiredDamage, int unspentPoints,
+                          int strength, int endurance, int agility, int intelligence, int perception) {
+        this(SCHEMA_VERSION, level, damageProgress, requiredDamage, unspentPoints,
+            strength, endurance, agility, intelligence, perception);
+    }
+
     public static PlayerProgress initial() { return new PlayerProgress(0, 0, 0, 0, 0, 0, 0, 0, 0); }
 
     public PlayerProgress withRequiredDamage(double value) {
         return new PlayerProgress(level, damageProgress, value, unspentPoints, strength, endurance, agility,
             intelligence, perception);
+    }
+
+    public PlayerProgress withAdditionalUnspentPoints(int amount) {
+        if (amount <= 0) return this;
+        return new PlayerProgress(level, damageProgress, requiredDamage, saturatedAdd(unspentPoints, amount),
+            strength, endurance, agility, intelligence, perception);
     }
 
     public int stat(Stat stat) {
@@ -72,5 +87,10 @@ public record PlayerProgress(int level, double damageProgress, double requiredDa
         int spent = strength + endurance + agility + intelligence + perception;
         int refunded = Math.max(0, spent - Math.max(0, Math.min(spent, pointsLost)));
         return new PlayerProgress(level, damageProgress, requiredDamage, unspentPoints + refunded, 0, 0, 0, 0, 0);
+    }
+
+    private static int saturatedAdd(int left, int right) {
+        long value = (long) left + right;
+        return value >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) value;
     }
 }

@@ -42,10 +42,10 @@ public final class AttributeRewardsConfig {
         return FMLPaths.CONFIGDIR.get().resolve(RELATIVE_PATH);
     }
 
-    public static void bootstrapAndMigrate() {
+    public static void bootstrapDefaults() {
         Path target = path();
         if (!Files.exists(target)) {
-            JsonObject root = migrateLegacy().orElseGet(AttributeRewardsConfig::defaultRoot);
+            JsonObject root = defaultRoot();
             try {
                 Files.createDirectories(target.getParent());
                 Files.writeString(target, GSON.toJson(root) + System.lineSeparator(), StandardCharsets.UTF_8);
@@ -183,47 +183,6 @@ public final class AttributeRewardsConfig {
         return new Snapshot(Map.copyOf(rewards), bonus, vanilla, soul);
     }
 
-    private static Optional<JsonObject> migrateLegacy() {
-        Path legacy = FMLPaths.CONFIGDIR.get().resolve("uapi/soul-ascension/server.toml");
-        if (!Files.exists(legacy)) return Optional.empty();
-        try {
-            List<String> lines = Files.readAllLines(legacy, StandardCharsets.UTF_8);
-            boolean section = false;
-            Map<Stat, String> values = new EnumMap<>(Stat.class);
-            for (String line : lines) {
-                String trimmed = line.trim();
-                if (trimmed.startsWith("[")) {
-                    section = trimmed.equalsIgnoreCase("[attribute_rewards]");
-                    continue;
-                }
-                if (!section || !trimmed.contains("=")) continue;
-                int separator = trimmed.indexOf('=');
-                String key = trimmed.substring(0, separator).trim();
-                String raw = trimmed.substring(separator + 1).trim();
-                if (raw.length() >= 2 && raw.startsWith("\"") && raw.endsWith("\""))
-                    raw = raw.substring(1, raw.length() - 1).replace("\\\"", "\"").replace("\\\\", "\\");
-                try { values.put(Stat.valueOf(key.toUpperCase(Locale.ROOT)), raw); }
-                catch (IllegalArgumentException ignored) {}
-            }
-            if (values.isEmpty()) return Optional.empty();
-            JsonObject root = defaultRoot();
-            JsonObject stats = root.getAsJsonObject("stats");
-            for (Map.Entry<Stat, String> value : values.entrySet()) {
-                JsonObject rewards = new JsonObject();
-                String[] entries = value.getValue().split(";");
-                for (int index = 0; index < entries.length; index++)
-                    AttributeService.parseLegacy(entries[index].trim(), index).ifPresent(definition ->
-                        rewards.add(definition.attributeId().toString(), toJson(definition)));
-                stats.getAsJsonObject(value.getKey().name().toLowerCase(Locale.ROOT)).add("rewards", rewards);
-            }
-            SoulAscensionMod.LOGGER.info("Migrated legacy attribute_rewards TOML values to {}", path());
-            return Optional.of(root);
-        } catch (IOException exception) {
-            SoulAscensionMod.LOGGER.warn("Could not inspect legacy attribute rewards: {}", exception.getMessage());
-            return Optional.empty();
-        }
-    }
-
     private static JsonObject defaultRoot() {
         JsonObject root = new JsonObject();
         JsonObject stats = new JsonObject();
@@ -273,23 +232,6 @@ public final class AttributeRewardsConfig {
         value.addProperty("display_category", category);
         value.addProperty("formatter", formatter);
         stats.getAsJsonObject(stat).getAsJsonObject("rewards").add(id, value);
-    }
-
-    private static JsonObject toJson(AttributeService.ConfiguredModifier definition) {
-        JsonObject value = new JsonObject();
-        value.addProperty("enabled", true);
-        value.addProperty("amount_per_point", definition.amountPerPoint());
-        value.addProperty("operation", definition.operation().name());
-        if (definition.minimumFinal() == null) value.add("min_final", com.google.gson.JsonNull.INSTANCE);
-        else value.addProperty("min_final", definition.minimumFinal());
-        if (definition.maximumFinal() == null) value.add("cap", com.google.gson.JsonNull.INSTANCE);
-        else value.addProperty("cap", definition.maximumFinal());
-        if (definition.requiredMod().isBlank()) value.add("required_mod", com.google.gson.JsonNull.INSTANCE);
-        else value.addProperty("required_mod", definition.requiredMod());
-        value.addProperty("display", definition.displayInUi());
-        value.addProperty("display_category", definition.category());
-        value.addProperty("formatter", definition.formatter());
-        return value;
     }
 
     private static JsonObject object(JsonObject parent, String key) {

@@ -30,7 +30,6 @@ public final class SoulLensOverlay {
     private record CachedAttributeRow(Component name, Component value) {}
     private static final ResourceLocation PANEL = SoulAscensionMod.id("character/panel");
     private static final ResourceLocation INSET = SoulAscensionMod.id("character/inset");
-    private static final ResourceLocation SECTION = SoulAscensionMod.id("character/section");
     private static final int NO_TARGET = -2;
     private static final int LOADING = -1;
     private static final int STAT_ROW_HEIGHT = 17;
@@ -169,7 +168,7 @@ public final class SoulLensOverlay {
         int statY = y + 46;
         for (int index = 0; index < names.length; index++) {
             int rowY = statY + index * STAT_ROW_HEIGHT;
-            blit(graphics, SECTION, x, rowY, width, 15, opacity);
+            drawRow(graphics, x, rowY, width, 15, opacity);
             Component name = Component.translatable("stat.soul_ascension.short." + names[index]);
             String valueText = Integer.toString(values[index]);
             int valueX = x + width - 5 - minecraft.font.width(valueText);
@@ -183,10 +182,16 @@ public final class SoulLensOverlay {
         graphics.drawString(minecraft.font, Component.translatable("overlay.soul_ascension.soul_lens.public_attributes"),
             x + 3, attributesTop, color(SoulUiTheme.ACCENT, opacity), false);
         int clipTop = attributesTop + 14;
-        graphics.enableScissor(x, clipTop, x + width, y + height);
+        int clipBottom = y + height;
+        graphics.enableScissor(x, clipTop, x + width, clipBottom);
         int rowY = clipTop - scroll;
         for (CachedAttributeRow attribute : cachedAttributeRows) {
-            blit(graphics, SECTION, x, rowY, width, 15, opacity);
+            if (rowY + 15 < clipTop) {
+                rowY += STAT_ROW_HEIGHT;
+                continue;
+            }
+            if (rowY > clipBottom) break;
+            drawRow(graphics, x, rowY, width, 15, opacity);
             int valueX = x + width - 4 - minecraft.font.width(attribute.value());
             graphics.drawString(minecraft.font, trim(minecraft, attribute.name(), valueX - x - 8), x + 4, rowY + 3,
                 color(SoulUiTheme.TEXT, opacity), false);
@@ -268,5 +273,11 @@ public final class SoulLensOverlay {
         graphics.blitSprite(sprite, x, y, width, height);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         RenderSystem.disableBlend();
+    }
+
+    private static void drawRow(GuiGraphics graphics, int x, int y, int width, int height, double opacity) {
+        graphics.fill(x, y, x + width, y + height, color(0xE8140F1D, opacity));
+        graphics.fill(x, y, x + width, y + 1, color(SoulUiTheme.DIVIDER, opacity));
+        graphics.fill(x, y + height - 1, x + width, y + height, color(0xFF2D2438, opacity));
     }
 }

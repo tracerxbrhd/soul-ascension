@@ -61,8 +61,8 @@ public final class SoulAscensionEvents {
         target.setData(SoulAscensionAttachments.DAMAGE_LEDGER, ledger.withCredit(player.getUUID(), previous + credit));
         double intelligenceMultiplier = AttributeRewardsConfig.affectsSoulProgression()
             ? AttributeRewardsConfig.experienceMultiplier(SoulAscensionService.get(player).intelligence()) : 1.0;
-        SoulAscensionService.addExperience(player,
-            credit * farmMultiplier(player.getUUID(), target.getType()) * intelligenceMultiplier);
+        double creditedProgress = credit * farmMultiplier(player.getUUID(), target.getType()) * intelligenceMultiplier;
+        SoulAscensionService.addExperience(player, creditedProgress);
     }
 
     @SubscribeEvent
@@ -99,8 +99,9 @@ public final class SoulAscensionEvents {
 
     @SubscribeEvent
     public static void onChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player)
+        if (event.getEntity() instanceof ServerPlayer player) {
             AttributeService.apply(player, SoulAscensionService.get(player));
+        }
     }
 
     @SubscribeEvent

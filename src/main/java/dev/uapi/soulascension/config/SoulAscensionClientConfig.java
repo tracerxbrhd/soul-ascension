@@ -37,6 +37,7 @@ public final class SoulAscensionClientConfig {
     public static final ModConfigSpec.ConfigValue<String> HIDDEN_ATTRIBUTES;
     public static final ModConfigSpec.ConfigValue<String> VISIBLE_ATTRIBUTES;
     public static final ModConfigSpec.ConfigValue<String> ATTRIBUTE_CATEGORIES;
+    public static final ModConfigSpec.BooleanValue SHOW_PLAYER_PREVIEW;
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -45,21 +46,29 @@ public final class SoulAscensionClientConfig {
         SHOW_ATTRIBUTE_NAMESPACES = builder.comment(
             "Show registry IDs in the attribute detail pane.",
             "Advanced tooltips (F3+H) also reveal IDs. Default: false.")
-            .define("showAttributeNamespaces", false);
+            .define("show_attribute_namespaces", false);
         HIDDEN_ATTRIBUTES = builder.comment(
             "Comma-separated attribute IDs hidden from the dynamic attribute page.",
             "Entries in visibleAttributes override this list.",
             "The defaults hide low-value engine/movement internals and unsupported creative-only values.")
-            .define("hiddenAttributes", DEFAULT_HIDDEN_ATTRIBUTES);
+            .define("hidden_attributes", DEFAULT_HIDDEN_ATTRIBUTES);
         VISIBLE_ATTRIBUTES = builder.comment(
             "Comma-separated attribute IDs that must be shown even if they are in hiddenAttributes.",
             "Default: empty. Add minecraft:generic.oxygen_bonus here to opt in to Oxygen Bonus.")
-            .define("visibleAttributes", "");
+            .define("visible_attributes", "");
         ATTRIBUTE_CATEGORIES = builder.comment(
             "Semicolon-separated attribute-to-category overrides: attribute_id=category.",
             "Built-in categories: damage, defense, mobility, utility, magic, other.",
             "Example: examplemod:spell_power=magic")
-            .define("attributeCategories", "");
+            .define("attribute_categories", "");
+        builder.pop();
+
+        builder.comment("Local Character Screen presentation. Client-side only; does not affect gameplay.")
+            .push("character_screen");
+        SHOW_PLAYER_PREVIEW = builder.comment(
+            "Render the 3D player preview in the Character Screen. Default: false.",
+            "This uses Minecraft's inventory entity renderer every frame; enable it only if the FPS cost is acceptable.")
+            .define("show_player_preview", false);
         builder.pop();
         SPEC = builder.build();
     }

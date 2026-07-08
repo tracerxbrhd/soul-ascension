@@ -20,7 +20,8 @@ public final class SoulAscensionClientConfigManager {
             SoulAscensionClientConfig.SHOW_ATTRIBUTE_NAMESPACES.get(),
             SoulAscensionClientConfig.HIDDEN_ATTRIBUTES.get(),
             SoulAscensionClientConfig.VISIBLE_ATTRIBUTES.get(),
-            SoulAscensionClientConfig.ATTRIBUTE_CATEGORIES.get()
+            SoulAscensionClientConfig.ATTRIBUTE_CATEGORIES.get(),
+            SoulAscensionClientConfig.SHOW_PLAYER_PREVIEW.get()
         );
         loaded = true;
     }

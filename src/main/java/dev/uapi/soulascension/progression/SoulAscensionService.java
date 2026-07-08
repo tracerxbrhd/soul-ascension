@@ -19,7 +19,13 @@ public final class SoulAscensionService {
 
     private SoulAscensionService() {}
 
-    public static PlayerProgress get(ServerPlayer player) { return player.getData(SoulAscensionAttachments.PROGRESS); }
+    public static PlayerProgress get(ServerPlayer player) {
+        PlayerProgress progress = player.getData(SoulAscensionAttachments.PROGRESS);
+        if (progress.schemaVersion() == PlayerProgress.SCHEMA_VERSION) return progress;
+        PlayerProgress initial = PlayerProgress.initial().withRequiredDamage(requiredDamage(0));
+        player.setData(SoulAscensionAttachments.PROGRESS, initial);
+        return initial;
+    }
     public static double requiredDamage(int level) {
         SoulAscensionRuntimeConfig config = SoulAscensionConfigManager.current();
         int safeLevel = Math.max(1, level);
@@ -59,7 +65,7 @@ public final class SoulAscensionService {
         while (progress >= requiredDamage(level) && (maxLevel == 0 || level < maxLevel)) {
             progress -= requiredDamage(level);
             level++;
-            points += pointsAwardedForLevel(level);
+            points = saturatedAdd(points, pointsAwardedForLevel(level));
             gained++;
         }
         if (maxLevel > 0 && level >= maxLevel) progress = 0;
@@ -108,6 +114,22 @@ public final class SoulAscensionService {
         return reachedLevel > 0 ? SoulAscensionConfigManager.current().pointsPerLevel() : 0;
     }
 
+    /**
+     * Black Books directly increase one stat and immediately re-apply all configured
+     * attribute modifiers for that stat. They do not add free allocation points.
+     */
+    public static boolean increaseStatFromBook(ServerPlayer player, Stat stat) {
+        SoulAscensionRuntimeConfig config = SoulAscensionConfigManager.current();
+        PlayerProgress old = get(player);
+        int maxPerStat = config.maxPointsPerStat();
+        if (config.limitStatPoints() && maxPerStat > 0 && old.stat(stat) >= maxPerStat) return false;
+        PlayerProgress updated = incrementStatWithoutPointCost(old, stat);
+        player.setData(SoulAscensionAttachments.PROGRESS, updated);
+        AttributeService.apply(player, updated);
+        TitleService.evaluate(player);
+        return true;
+    }
+
     public static boolean changeStat(ServerPlayer player, Stat stat, int delta) {
         if (delta != 1 && delta != -1) return false;
         SoulAscensionRuntimeConfig config = SoulAscensionConfigManager.current();
@@ -150,11 +172,14 @@ public final class SoulAscensionService {
         return new ResetResult(true, allocated, allocated - lost, lost);
     }
 
-    public static void addPoints(ServerPlayer player, int amount) {
+    public static void grantBonusAttributePoints(ServerPlayer player, int amount) {
+        if (amount <= 0) return;
         PlayerProgress old = get(player);
-        player.setData(SoulAscensionAttachments.PROGRESS, new PlayerProgress(old.level(), old.damageProgress(), old.requiredDamage(),
-            Math.max(0, old.unspentPoints() + amount), old.strength(), old.endurance(), old.agility(),
-            old.intelligence(), old.perception()));
+        player.setData(SoulAscensionAttachments.PROGRESS, old.withAdditionalUnspentPoints(amount));
+    }
+
+    public static void addPoints(ServerPlayer player, int amount) {
+        grantBonusAttributePoints(player, amount);
     }
 
     public static void resetAll(ServerPlayer player) {
@@ -173,5 +198,19 @@ public final class SoulAscensionService {
             ? AttributeRewardsConfig.experienceMultiplier(progress.intelligence()) : 1.0;
         addExperience(context.player(), amount * context.instance().difficulty().rewardMultiplier() * intelligenceBonus);
         return amount > 0;
+    }
+
+    private static int saturatedAdd(int left, int right) {
+        long value = (long) left + right;
+        return value >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) value;
+    }
+
+    private static PlayerProgress incrementStatWithoutPointCost(PlayerProgress old, Stat stat) {
+        return new PlayerProgress(old.level(), old.damageProgress(), old.requiredDamage(), old.unspentPoints(),
+            old.strength() + (stat == Stat.STRENGTH ? 1 : 0),
+            old.endurance() + (stat == Stat.ENDURANCE ? 1 : 0),
+            old.agility() + (stat == Stat.AGILITY ? 1 : 0),
+            old.intelligence() + (stat == Stat.INTELLIGENCE ? 1 : 0),
+            old.perception() + (stat == Stat.PERCEPTION ? 1 : 0));
     }
 }

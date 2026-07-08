@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "entries": [
+    "soul_ascension:stat_book_stronghold_library",
+    "soul_ascension:stat_book_ancient_city",
+    "soul_ascension:stat_book_woodland_mansion",
+    "soul_ascension:stat_book_end_city_treasure",
+    "soul_ascension:stat_book_simple_dungeon"
+  ]
+}

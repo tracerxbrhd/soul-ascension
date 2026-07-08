@@ -2,6 +2,7 @@ package dev.uapi.soulascension.network;
 
 /** Client cache populated exclusively by the authoritative server. */
 public final class ClientProgressionRules {
+    private static int maxLevel = 100;
     private static boolean amnesiaPointLossEnabled;
     private static double amnesiaPointLossPercent;
     private static boolean limitStatPoints;
@@ -20,6 +21,7 @@ public final class ClientProgressionRules {
     private ClientProgressionRules() {}
 
     public static void replace(ProgressionRulesPayload payload) {
+        maxLevel = Math.max(1, payload.maxLevel());
         amnesiaPointLossEnabled = payload.amnesiaPointLossEnabled();
         amnesiaPointLossPercent = Math.max(0.0, Math.min(100.0, payload.amnesiaPointLossPercent()));
         limitStatPoints = payload.limitStatPoints();
@@ -37,6 +39,7 @@ public final class ClientProgressionRules {
     }
 
     public static boolean amnesiaPointLossEnabled() { return amnesiaPointLossEnabled; }
+    public static int maxLevel() { return maxLevel; }
     public static double amnesiaPointLossPercent() { return amnesiaPointLossPercent; }
     public static boolean limitStatPoints() { return limitStatPoints; }
     public static int maxPointsPerStat() { return maxPointsPerStat; }

@@ -25,6 +25,7 @@ public record SoulAscensionRuntimeConfig(
     boolean showTitlesInNameplate,
     boolean fullHealthAfterRespawn,
     boolean debugItemsEnabled,
+    boolean statBookLootEnabled,
     boolean soulLensEnabled,
     double soulLensRange,
     boolean soulLensRequireLineOfSight,
@@ -40,7 +41,8 @@ public record SoulAscensionRuntimeConfig(
             100, 1, false, 100,
             true, true, 12, 0.08, 0.15,
             true, false, 25.0, true, true,
-            true, true, true,
+            true, true,
+            true, true,
             true, 64.0, true, 10, true, 0.25, 0.85, true
         );
     }

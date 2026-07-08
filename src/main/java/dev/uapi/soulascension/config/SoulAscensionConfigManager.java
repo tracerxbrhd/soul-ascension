@@ -40,6 +40,7 @@ public final class SoulAscensionConfigManager {
             SoulAscensionServerConfig.SHOW_TITLES_IN_NAMEPLATE.get(),
             SoulAscensionServerConfig.FULL_HEALTH_AFTER_RESPAWN.get(),
             SoulAscensionServerConfig.DEBUG_ITEMS_ENABLED.get(),
+            SoulAscensionServerConfig.STAT_BOOK_LOOT_ENABLED.get(),
             SoulAscensionServerConfig.SOUL_LENS_ENABLED.get(),
             SoulAscensionServerConfig.SOUL_LENS_RANGE.get(),
             SoulAscensionServerConfig.SOUL_LENS_REQUIRE_LINE_OF_SIGHT.get(),
