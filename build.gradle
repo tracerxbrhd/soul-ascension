@@ -96,7 +96,7 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 
 dependencies {
-    implementation 'dev.uapi:u-api:1.3.0'
+    implementation "dev.uapi:u-api:${u_api_version}"
     // Example mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
     // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
@@ -131,6 +131,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
                              mod_name               : mod_name,
                              mod_license            : mod_license,
                              mod_version            : mod_version,
+                             u_api_version_range    : u_api_version_range,
                              mod_authors            : mod_authors,
                              mod_description        : mod_description]
     inputs.properties replaceProperties
@@ -169,6 +170,7 @@ idea {
 }
 
 tasks.named('jar') {
+    archiveVersion.set("${project.mod_version}+mc${project.minecraft_version}")
     from('LICENSE') {
         into 'META-INF'
     }

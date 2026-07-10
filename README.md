@@ -7,11 +7,11 @@ SOUL-ASCENSION is a configurable RPG progression mod. Dealing valid damage advan
 - Minecraft 1.21.1
 - NeoForge 21.1.234
 - Java 21
-- U-API 1.3.0 or newer
+- U-API 1.3.1 or newer
 
-Current version: 1.3.0. Mod ID: `soul_ascension`.
+Current version: 1.3.1. Mod ID: `soul_ascension`.
 
-**1.3.0 is a breaking update. Old progression/config data may not be compatible.** The player progression attachment and network protocol were deliberately replaced; no migration layer is provided.
+**1.3.x is a breaking release line. Old progression/config data may not be compatible.** The player progression attachment and network protocol were deliberately replaced; no migration layer is provided.
 
 ## Character progression
 
@@ -41,4 +41,4 @@ There is no custom in-game configuration editor. See [`docs/config.md`](docs/con
 
 Resource-pack paths, including the replaceable Soul Lens model and texture, are documented in [`docs/resourcepacks.md`](docs/resourcepacks.md). Titles and optional integrations are documented in [`docs/TITLES_AND_INTEGRATIONS.md`](docs/TITLES_AND_INTEGRATIONS.md).
 
-Build on Windows with `gradlew.bat build`. The resulting artifact is `build/libs/soul-ascension-1.3.0.jar`.
+Build on Windows with `gradlew.bat build`. The resulting artifact is `build/libs/soul-ascension-1.3.1+mc1.21.1.jar`.

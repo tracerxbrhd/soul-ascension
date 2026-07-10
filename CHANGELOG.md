@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.1 - 2026-07-10
+
+- Release build for the 1.3.x progression line.
+- Requires U-API 1.3.1 or newer.
+- Refactored the Gradle/U-API dependency metadata so the required U-API version is controlled from `gradle.properties`.
+
 ## 1.3.0 - 2026-07-06
 
 - Breaking update: replaced character progression storage with schema 130; old progression/config data may not be compatible and no migration is performed.
