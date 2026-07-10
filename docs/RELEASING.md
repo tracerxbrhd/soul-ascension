@@ -15,6 +15,12 @@ Create these repository variables:
 - `CURSEFORGE_PROJECT_ID` — Soul Ascension project ID on CurseForge. Optional.
 - `U_API_MODRINTH_PROJECT_ID` — U-API project ID or slug on Modrinth. This is mandatory because U-API is a required dependency.
 - `U_API_CURSEFORGE_PROJECT_ID` — U-API project ID on CurseForge. Required only when CurseForge publishing is configured.
+- `U_API_REPOSITORY` — optional GitHub repository to checkout for compile-time U-API sources, for example `tracerxbrhd/u-api`. Defaults to `<owner>/u-api`.
+- `U_API_REF` — optional branch, tag or commit to checkout from `U_API_REPOSITORY`. Defaults to `v<u_api_version>+mc<minecraft_version>`, for example `v1.3.1+mc1.21.1`.
+
+If the U-API repository is private and the default `GITHUB_TOKEN` cannot read it, create this repository secret:
+
+- `U_API_REPOSITORY_TOKEN` — GitHub token with read access to the U-API repository.
 
 Secrets are encrypted and intended for tokens. Variables are non-secret repository configuration such as project IDs.
 
@@ -28,6 +34,8 @@ Publish connected versions in this order:
 4. Release Soul Ascension.
 
 Soul Ascension must not be published with a dependency on a U-API version that is not available to users yet.
+
+The GitHub workflow checks out U-API into `u-api/` inside the Soul Ascension workspace for compile-time sources. Local development still uses the sibling `../u-api` checkout when it exists.
 
 ## Local dry-run
 

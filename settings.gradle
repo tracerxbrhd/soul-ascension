@@ -12,8 +12,17 @@ plugins {
 
 rootProject.name = 'soul-ascension'
 
-includeBuild('../u-api') {
-    dependencySubstitution {
-        substitute module('dev.uapi:u-api') using project(':')
+def localUApiBuild = file('u-api')
+def siblingUApiBuild = file('../u-api')
+def uApiBuild = localUApiBuild.isDirectory() ? localUApiBuild
+    : (siblingUApiBuild.isDirectory() ? siblingUApiBuild : null)
+
+if (uApiBuild != null) {
+    includeBuild(uApiBuild) {
+        dependencySubstitution {
+            substitute module('dev.uapi:u-api') using project(':')
+        }
     }
+} else {
+    println "U-API composite build was not found; resolving dev.uapi:u-api from configured repositories."
 }

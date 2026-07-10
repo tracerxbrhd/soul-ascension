@@ -23,6 +23,43 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Resolve U-API checkout target
+        id: uapi_checkout
+        shell: bash
+        env:
+          U_API_REPOSITORY: ${{ vars.U_API_REPOSITORY }}
+          U_API_REF: ${{ vars.U_API_REF }}
+        run: |
+          set -euo pipefail
+
+          read_property() {
+            local key="$1"
+            local value
+            value="$(grep -E "^${key}=" gradle.properties | head -n 1 | cut -d '=' -f 2- | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+            if [[ -z "${value}" ]]; then
+              echo "Required gradle.properties key '${key}' is missing or empty." >&2
+              exit 1
+            fi
+            printf '%s' "${value}"
+          }
+
+          u_api_version="$(read_property u_api_version)"
+          minecraft_version="$(read_property minecraft_version)"
+          repository="${U_API_REPOSITORY:-${GITHUB_REPOSITORY_OWNER}/u-api}"
+          ref="${U_API_REF:-v${u_api_version}+mc${minecraft_version}}"
+
+          echo "repository=${repository}" >> "${GITHUB_OUTPUT}"
+          echo "ref=${ref}" >> "${GITHUB_OUTPUT}"
+          echo "Using U-API source: ${repository}@${ref}"
+
+      - name: Checkout U-API dependency
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.uapi_checkout.outputs.repository }}
+          ref: ${{ steps.uapi_checkout.outputs.ref }}
+          path: u-api
+          token: ${{ secrets.U_API_REPOSITORY_TOKEN || secrets.GITHUB_TOKEN }}
+
       - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
