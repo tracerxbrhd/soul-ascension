@@ -4,6 +4,7 @@ import dev.uapi.soulascension.SoulAscensionMod;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
 public record ProgressionRulesPayload(int maxLevel, boolean amnesiaPointLossEnabled, double amnesiaPointLossPercent,
                                       boolean limitStatPoints, int maxPointsPerStat,
@@ -14,7 +15,8 @@ public record ProgressionRulesPayload(int maxLevel, boolean amnesiaPointLossEnab
                                       boolean intelligenceAffectsVanillaExperience,
                                       boolean intelligenceAffectsSoulProgression)
         implements CustomPacketPayload {
-    public static final Type<ProgressionRulesPayload> TYPE = new Type<>(SoulAscensionMod.id("progression_rules"));
+    public static final Type<ProgressionRulesPayload> TYPE = new Type<>(
+        ResourceLocation.fromNamespaceAndPath(SoulAscensionMod.MOD_ID, "progression_rules"));
     public static final StreamCodec<RegistryFriendlyByteBuf, ProgressionRulesPayload> STREAM_CODEC = new StreamCodec<>() {
         @Override public ProgressionRulesPayload decode(RegistryFriendlyByteBuf buffer) {
             return new ProgressionRulesPayload(buffer.readVarInt(), buffer.readBoolean(), buffer.readDouble(), buffer.readBoolean(),

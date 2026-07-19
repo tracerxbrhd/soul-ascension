@@ -10,6 +10,18 @@ group = mod_group_id
 
 repositories {
     mavenLocal()
+
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Modrinth'
+                url = uri('https://api.modrinth.com/maven')
+            }
+        }
+        filter {
+            includeGroup 'maven.modrinth'
+        }
+    }
 }
 
 base {
@@ -97,6 +109,10 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 dependencies {
     implementation "dev.uapi:u-api:${u_api_version}"
+    compileOnly "maven.modrinth:vu3NZ5Ma:${epic_fight_version}"
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     // Example mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
     // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
@@ -132,6 +148,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
                              mod_license            : mod_license,
                              mod_version            : mod_version,
                              u_api_version_range    : u_api_version_range,
+                             epic_fight_version_range: epic_fight_version_range,
                              mod_authors            : mod_authors,
                              mod_description        : mod_description]
     inputs.properties replaceProperties
@@ -168,6 +185,15 @@ idea {
         downloadJavadoc = true
     }
 }
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+// ModDev wires mapped Minecraft/NeoForge classes to main; codec and NBT fixture tests need the
+// same mapped classpath without starting a game runtime.
+sourceSets.test.compileClasspath += sourceSets.main.compileClasspath
+sourceSets.test.runtimeClasspath += sourceSets.main.runtimeClasspath
 
 tasks.named('jar') {
     archiveVersion.set("${project.mod_version}+mc${project.minecraft_version}")

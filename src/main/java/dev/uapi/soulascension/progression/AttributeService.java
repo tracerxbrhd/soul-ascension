@@ -4,6 +4,7 @@ import dev.uapi.soulascension.SoulAscensionMod;
 import dev.uapi.soulascension.config.AttributeRewardsConfig;
 import dev.uapi.soulascension.data.PlayerProgress;
 import dev.uapi.soulascension.data.Stat;
+import dev.uapi.soulascension.integration.OptionalIntegrations;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -30,9 +31,16 @@ public final class AttributeService {
     public record ModifierReplacement(ResourceLocation id, double amount, AttributeModifier.Operation operation) {}
 
     public static void apply(ServerPlayer player, PlayerProgress progress) {
+        // Invalid current-format data is read-only: clear stale transient modifiers and fail closed.
         removeManagedModifiers(player);
+        if (!progress.isUsable()) {
+            if (player.getHealth() > player.getMaxHealth()) player.setHealth(player.getMaxHealth());
+            OptionalIntegrations.afterAttributesApplied(player);
+            return;
+        }
         for (Stat stat : Stat.values()) applyStat(player, stat, progress.stat(stat));
         if (player.getHealth() > player.getMaxHealth()) player.setHealth(player.getMaxHealth());
+        OptionalIntegrations.afterAttributesApplied(player);
     }
 
     private static void applyStat(ServerPlayer player, Stat stat, int points) {

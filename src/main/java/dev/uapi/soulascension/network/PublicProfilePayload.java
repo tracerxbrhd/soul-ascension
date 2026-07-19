@@ -17,5 +17,9 @@ public record PublicProfilePayload(PublicProfileData profile) implements CustomP
         }
     };
 
+    public PublicProfilePayload {
+        java.util.Objects.requireNonNull(profile, "profile");
+    }
+
     @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
 }

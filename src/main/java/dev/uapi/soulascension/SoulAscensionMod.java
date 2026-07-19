@@ -20,6 +20,7 @@ import dev.uapi.soulascension.item.DebugProgressItem;
 import dev.uapi.soulascension.item.SoulBadgeItem;
 import dev.uapi.soulascension.item.WitheredMemoryPotionItem;
 import dev.uapi.soulascension.item.SoulLensItem;
+import dev.uapi.soulascension.integration.OptionalIntegrations;
 import dev.uapi.soulascension.network.SoulAscensionNetwork;
 import dev.uapi.soulascension.progression.AttributeService;
 import dev.uapi.soulascension.progression.SoulAscensionEvents;
@@ -109,7 +110,7 @@ public final class SoulAscensionMod {
         modBus.addListener(this::onConfigReload);
         modBus.addListener(this::commonSetup);
         AttributeRewardsConfig.bootstrapDefaults();
-        container.registerConfig(ModConfig.Type.COMMON, SoulAscensionServerConfig.SPEC, "uapi/soul-ascension/server.toml");
+        container.registerConfig(ModConfig.Type.SERVER, SoulAscensionServerConfig.SPEC, "uapi/soul-ascension/server.toml");
         container.registerConfig(ModConfig.Type.CLIENT, SoulAscensionClientConfig.SPEC, "uapi/soul-ascension/client.toml");
         NeoForge.EVENT_BUS.register(SoulAscensionEvents.class);
         NeoForge.EVENT_BUS.register(TitleReloadListener.class);
@@ -143,7 +144,10 @@ public final class SoulAscensionMod {
 
     private void commonSetup(FMLCommonSetupEvent event) {
         // Optional-mod attribute registries are complete by the time queued setup work runs.
-        event.enqueueWork(AttributeRewardsConfig::reload);
+        event.enqueueWork(() -> {
+            OptionalIntegrations.bootstrap();
+            AttributeRewardsConfig.reload();
+        });
     }
 
     public static ResourceLocation id(String path) {

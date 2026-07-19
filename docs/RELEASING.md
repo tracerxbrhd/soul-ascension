@@ -16,7 +16,7 @@ Create these repository variables:
 - `U_API_MODRINTH_PROJECT_ID` — U-API project ID or slug on Modrinth. This is mandatory because U-API is a required dependency.
 - `U_API_CURSEFORGE_PROJECT_ID` — U-API project ID on CurseForge. Required only when CurseForge publishing is configured.
 - `U_API_REPOSITORY` — optional GitHub repository to checkout for compile-time U-API sources, for example `tracerxbrhd/u-api`. Defaults to `<owner>/u-api`.
-- `U_API_REF` — optional branch, tag or commit to checkout from `U_API_REPOSITORY`. Defaults to `v<u_api_version>+mc<minecraft_version>`, for example `v1.3.1+mc1.21.1`.
+- `U_API_REF` — optional branch, tag or commit to checkout from `U_API_REPOSITORY`. Defaults to `v<u_api_version>+mc<minecraft_version>`, for example `v2.0.0+mc1.21.1`.
 
 If the U-API repository is private and the default `GITHUB_TOKEN` cannot read it, create this repository secret:
 
@@ -36,6 +36,24 @@ Publish connected versions in this order:
 Soul Ascension must not be published with a dependency on a U-API version that is not available to users yet.
 
 The GitHub workflow checks out U-API into `u-api/` inside the Soul Ascension workspace for compile-time sources. Local development still uses the sibling `../u-api` checkout when it exists.
+
+## Optional Epic Fight compatibility
+
+Soul Ascension 2.0 compiles its optional bridge against Epic Fight `21.17.3.1`. Release metadata
+must keep Epic Fight optional with the supported range `>=21.17.3.1` and `<21.18`; it must never be
+published as a required runtime dependency. Before publishing, verify both configurations:
+
+- build and start without Epic Fight;
+- compile and start with a supported Epic Fight `21.17.x` release;
+- inspect the Soul Ascension JAR and confirm it contains no Epic Fight classes, assets or nested JAR;
+- confirm damage-based Soul XP is awarded exactly once for an Epic Fight hit;
+- confirm stat allocation, respec, login, respawn and dimension change refresh Epic Fight attributes
+  and clamp current stamina through the supported capability API;
+- generate a clean 2.0 `attribute_rewards.json` and confirm all four native entries are present;
+- confirm starting with an edited current-format file does not inject or overwrite native entries.
+
+The full integration and configuration contract is in
+[`EPIC_FIGHT_INTEGRATION.md`](EPIC_FIGHT_INTEGRATION.md).
 
 ## Local dry-run
 
@@ -59,7 +77,7 @@ Dry-run performs the same local checks and clean Gradle build, then stops before
 ```powershell
 git status
 git add .
-git commit -m "Release 1.4.0"
+git commit -m "Release 2.0.0"
 git push github <branch>
 .\scripts\release.ps1
 ```
@@ -83,30 +101,30 @@ The script creates and pushes an annotated tag only after all checks pass.
 Release:
 
 ```text
-v1.3.1+mc1.21.1
+v2.0.0+mc1.21.1
 ```
 
 Beta/alpha:
 
 ```text
-v1.4.0-beta+mc1.21.1
-v1.4.0-alpha+mc1.21.1
+v2.0.0-beta+mc1.21.1
+v2.0.0-alpha+mc1.21.1
 ```
 
 The internal `gradle.properties` values remain separate:
 
 ```properties
-mod_version=1.3.1
+mod_version=2.0.0
 minecraft_version=1.21.1
-u_api_version=1.3.1
-u_api_version_range=[1.3.1,)
+u_api_version=2.0.0
+u_api_version_range=[2.0.0,3.0.0)
 release_remote=github
 ```
 
 The built user-facing JAR includes the Minecraft suffix, for example:
 
 ```text
-soul-ascension-1.3.1+mc1.21.1.jar
+soul-ascension-2.0.0+mc1.21.1.jar
 ```
 
 The Maven coordinate version remains the plain mod version, so the local U-API dependency stays compatible with the existing Gradle configuration.
@@ -145,8 +163,8 @@ If the local build fails, fix the project, commit the fix, push the branch and r
 If the tag push fails, the script removes the local tag automatically. If you need to remove a mistaken tag manually:
 
 ```powershell
-git tag -d v1.4.0+mc1.21.1
-git push github :refs/tags/v1.4.0+mc1.21.1
+git tag -d v2.0.0+mc1.21.1
+git push github :refs/tags/v2.0.0+mc1.21.1
 ```
 
 Do not reuse a published tag for a different commit. Users, GitHub Releases and publishing platforms can cache tag state. Prefer increasing the patch version and publishing a new release.
@@ -158,8 +176,8 @@ If Modrinth rejects a file, fix the cause, bump the patch version and publish a 
 Tags are unique across the entire repository:
 
 ```text
-v1.4.0+mc1.21.1
-v1.4.0+mc1.21.4
+v2.0.0+mc1.21.1
+v2.0.0+mc1.21.4
 ```
 
 The workflow only compares previous tags with the same `+mc<version>` suffix when generating fallback release notes.

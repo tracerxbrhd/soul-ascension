@@ -1,9 +1,11 @@
 package dev.uapi.soulascension.title;
 
 import dev.uapi.soulascension.data.SoulAscensionAttachments;
+import dev.uapi.soulascension.data.ActiveTitleData;
 import dev.uapi.soulascension.data.PlayerProgress;
 import dev.uapi.soulascension.data.TitleProgress;
 import dev.uapi.soulascension.data.TitleCounters;
+import dev.uapi.soulascension.progression.SoulAscensionService;
 import dev.uapi.soulascension.network.ClientTitleDefinition;
 import dev.uapi.soulascension.network.TitleDefinitionsPayload;
 import net.minecraft.network.chat.Component;
@@ -20,7 +22,8 @@ public final class TitleService {
     public static TitleProgress get(ServerPlayer player) { return player.getData(SoulAscensionAttachments.TITLES); }
 
     public static int evaluate(ServerPlayer player) {
-        PlayerProgress progress = player.getData(SoulAscensionAttachments.PROGRESS);
+        PlayerProgress progress = SoulAscensionService.get(player);
+        if (!progress.isUsable()) return 0;
         TitleProgress original = get(player);
         TitleCounters counters = player.getData(SoulAscensionAttachments.TITLE_COUNTERS);
         TitleProgress updated = original.retain(TitleRegistry.ids());
@@ -42,8 +45,8 @@ public final class TitleService {
         if (!updated.equals(original)) player.setData(SoulAscensionAttachments.TITLES, updated);
         ResourceLocation displayed = dev.uapi.soulascension.config.SoulAscensionConfigManager.current().showTitlesInNameplate()
             ? updated.activeTitle() : TitleProgress.NONE;
-        if (!player.getData(SoulAscensionAttachments.ACTIVE_TITLE).equals(displayed))
-            player.setData(SoulAscensionAttachments.ACTIVE_TITLE, displayed);
+        if (!player.getData(SoulAscensionAttachments.ACTIVE_TITLE).titleId().equals(displayed))
+            player.setData(SoulAscensionAttachments.ACTIVE_TITLE, ActiveTitleData.of(displayed));
         if (!original.activeTitle().equals(updated.activeTitle())) player.refreshTabListName();
         unlockedNow.forEach(definition -> player.sendSystemMessage(Component.translatable(
             "message.soul_ascension.title_unlocked", Component.translatable(definition.nameKey()))));
@@ -58,8 +61,9 @@ public final class TitleService {
         }
         if (old.activeTitle().equals(id)) return true;
         player.setData(SoulAscensionAttachments.TITLES, old.activeTitle(id));
-        player.setData(SoulAscensionAttachments.ACTIVE_TITLE,
-            dev.uapi.soulascension.config.SoulAscensionConfigManager.current().showTitlesInNameplate() ? id : TitleProgress.NONE);
+        player.setData(SoulAscensionAttachments.ACTIVE_TITLE, ActiveTitleData.of(
+            dev.uapi.soulascension.config.SoulAscensionConfigManager.current().showTitlesInNameplate()
+                ? id : TitleProgress.NONE));
         player.refreshTabListName();
         return true;
     }
@@ -79,7 +83,7 @@ public final class TitleService {
     public static void resetTitles(ServerPlayer player) {
         player.setData(SoulAscensionAttachments.TITLES, TitleProgress.initial());
         player.setData(SoulAscensionAttachments.TITLE_COUNTERS, TitleCounters.initial());
-        player.setData(SoulAscensionAttachments.ACTIVE_TITLE, TitleProgress.NONE);
+        player.setData(SoulAscensionAttachments.ACTIVE_TITLE, ActiveTitleData.none());
         player.refreshTabListName();
         evaluate(player);
     }

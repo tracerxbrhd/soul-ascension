@@ -1,0 +1,12 @@
+{
+  "dataVersion": 2,
+  "level": "not-an-integer",
+  "damageProgress": "not-a-number",
+  "requiredDamage": -5.0,
+  "unspentPoints": 7,
+  "strength": -1,
+  "endurance": 3,
+  "agility": 4,
+  "intelligence": 5,
+  "perception": 6
+}

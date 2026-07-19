@@ -14,7 +14,6 @@ import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.InputEvent;
-import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import org.lwjgl.glfw.GLFW;
 import net.minecraft.network.chat.Component;
 
@@ -47,6 +46,7 @@ public final class SoulAscensionClientEvents {
 
         @SubscribeEvent public static void registerKeys(RegisterKeyMappingsEvent event) {
             event.register(OPEN);
+            SoulLensOverlay.registerHud();
             UApiScreenTabs.register(SoulAscensionMod.id("character"), 100,
                 Component.translatable("button.soul_ascension.character"),
                 SoulAscensionMod.id("textures/gui/icons/character_tab.png"), minecraft -> new CharacterScreen());
@@ -57,11 +57,6 @@ public final class SoulAscensionClientEvents {
     public static final class GameBus {
         @SubscribeEvent public static void tick(ClientTickEvent.Post event) {
             while (OPEN.consumeClick()) Minecraft.getInstance().setScreen(new CharacterScreen());
-            SoulLensOverlay.tick();
-        }
-
-        @SubscribeEvent public static void renderGui(RenderGuiEvent.Post event) {
-            SoulLensOverlay.render(event.getGuiGraphics());
         }
 
         @SubscribeEvent public static void mouseScroll(InputEvent.MouseScrollingEvent event) {

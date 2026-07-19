@@ -6,7 +6,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.uapi.integration.IntegrationService;
-import dev.uapi.soulascension.SoulAscensionMod;
 import dev.uapi.soulascension.data.Stat;
 import dev.uapi.soulascension.progression.AttributeService;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -16,6 +15,7 @@ import net.neoforged.fml.loading.FMLPaths;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -29,6 +29,8 @@ import java.util.Optional;
 /** Runtime tree config for stat rewards. Invalid entries are logged and skipped independently. */
 public final class AttributeRewardsConfig {
     public static final String RELATIVE_PATH = "uapi/soul-ascension/attribute_rewards.json";
+    static final int FORMAT_VERSION = 2;
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static volatile Snapshot snapshot = defaultSnapshot();
 
@@ -50,7 +52,7 @@ public final class AttributeRewardsConfig {
                 Files.createDirectories(target.getParent());
                 Files.writeString(target, GSON.toJson(root) + System.lineSeparator(), StandardCharsets.UTF_8);
             } catch (IOException exception) {
-                SoulAscensionMod.LOGGER.warn("Could not create {}: {}", target, exception.getMessage());
+                LOGGER.warn("Could not create {}: {}", target, exception.getMessage());
             }
         }
     }
@@ -60,11 +62,18 @@ public final class AttributeRewardsConfig {
         try {
             JsonElement element = JsonParser.parseString(Files.readString(target, StandardCharsets.UTF_8));
             if (!element.isJsonObject()) throw new IllegalArgumentException("root must be an object");
-            if (!element.getAsJsonObject().has("stats") || !element.getAsJsonObject().get("stats").isJsonObject())
+            JsonObject root = element.getAsJsonObject();
+            if (!currentFormat(root)) {
+                LOGGER.error("Ignoring unsupported {}. Soul Ascension 2.0 requires a clean format_version={} file",
+                    target, FORMAT_VERSION);
+                snapshot = parse(defaultRoot(), true);
+                return;
+            }
+            if (!root.has("stats") || !root.get("stats").isJsonObject())
                 throw new IllegalArgumentException("stats must be an object");
-            snapshot = parse(element.getAsJsonObject(), true);
+            snapshot = parse(root, true);
         } catch (Exception exception) {
-            SoulAscensionMod.LOGGER.warn("Could not load {}. Backing it up and restoring defaults: {}",
+            LOGGER.warn("Could not load {}. Backing it up and restoring defaults: {}",
                 target, exception.getMessage());
             backupBroken(target);
             JsonObject defaults = defaultRoot();
@@ -86,16 +95,37 @@ public final class AttributeRewardsConfig {
         try {
             Files.move(target, backup, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException exception) {
-            SoulAscensionMod.LOGGER.warn("Could not back up broken config {}: {}", target, exception.getMessage());
+            LOGGER.warn("Could not back up broken config {}: {}", target, exception.getMessage());
         }
     }
 
-    private static void writeConfig(Path target, JsonObject root) {
+    private static boolean writeConfig(Path target, JsonObject root) {
+        Path temporary = target.resolveSibling(target.getFileName() + ".tmp");
         try {
             Files.createDirectories(target.getParent());
-            Files.writeString(target, GSON.toJson(root) + System.lineSeparator(), StandardCharsets.UTF_8);
+            Files.writeString(temporary, GSON.toJson(root) + System.lineSeparator(), StandardCharsets.UTF_8);
+            moveIntoPlace(temporary, target, true);
+            return true;
         } catch (IOException exception) {
-            SoulAscensionMod.LOGGER.warn("Could not write {}: {}", target, exception.getMessage());
+            LOGGER.warn("Could not write {}: {}", target, exception.getMessage());
+            return false;
+        } finally {
+            try { Files.deleteIfExists(temporary); }
+            catch (IOException ignored) {}
+        }
+    }
+
+    private static void moveIntoPlace(Path source, Path target, boolean replace) throws IOException {
+        StandardCopyOption[] atomicOptions = replace
+            ? new StandardCopyOption[] {StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING}
+            : new StandardCopyOption[] {StandardCopyOption.ATOMIC_MOVE};
+        StandardCopyOption[] fallbackOptions = replace
+            ? new StandardCopyOption[] {StandardCopyOption.REPLACE_EXISTING}
+            : new StandardCopyOption[0];
+        try {
+            Files.move(source, target, atomicOptions);
+        } catch (AtomicMoveNotSupportedException ignored) {
+            Files.move(source, target, fallbackOptions);
         }
     }
 
@@ -115,8 +145,11 @@ public final class AttributeRewardsConfig {
         try {
             JsonElement element = JsonParser.parseString(text);
             if (!element.isJsonObject()) return Optional.of("Root value must be a JSON object");
-            if (!element.getAsJsonObject().has("stats")) return Optional.of("Missing object: stats");
-            parse(element.getAsJsonObject(), false);
+            JsonObject root = element.getAsJsonObject();
+            if (!currentFormat(root)) return Optional.of(
+                "Unsupported attribute reward format; expected format_version=" + FORMAT_VERSION);
+            if (!root.has("stats")) return Optional.of("Missing object: stats");
+            parse(root, false);
             return Optional.empty();
         } catch (RuntimeException exception) {
             return Optional.of(exception.getMessage() == null ? "Invalid JSON" : exception.getMessage());
@@ -159,6 +192,7 @@ public final class AttributeRewardsConfig {
                     if (requiredMod != null && !requiredMod.matches("[a-z][a-z0-9_]{1,63}"))
                         throw new IllegalArgumentException("invalid required_mod");
                     if (requiredMod != null && !IntegrationService.isLoaded(requiredMod)) continue;
+                    if (!nativeRewardEnabled(root, value)) continue;
                     if (BuiltInRegistries.ATTRIBUTE.getHolder(attributeId).isEmpty())
                         throw new IllegalArgumentException("unknown attribute id");
                     double amount = finite(value, "amount_per_point", 0.0);
@@ -175,7 +209,7 @@ public final class AttributeRewardsConfig {
                 } catch (RuntimeException exception) {
                     String location = stat.name().toLowerCase(Locale.ROOT) + "." + entry.getKey();
                     if (!logWarnings) throw new IllegalArgumentException(location + ": " + exception.getMessage(), exception);
-                    SoulAscensionMod.LOGGER.warn("Skipping stat reward {}: {}", location, exception.getMessage());
+                    LOGGER.warn("Skipping stat reward {}: {}", location, exception.getMessage());
                 }
             }
             rewards.put(stat, List.copyOf(parsed));
@@ -185,6 +219,7 @@ public final class AttributeRewardsConfig {
 
     private static JsonObject defaultRoot() {
         JsonObject root = new JsonObject();
+        root.addProperty("format_version", FORMAT_VERSION);
         JsonObject stats = new JsonObject();
         root.add("stats", stats);
         for (Stat stat : Stat.values()) {
@@ -215,7 +250,17 @@ public final class AttributeRewardsConfig {
         reward(stats, "perception", "apothic_attributes:crit_chance", 0.002, "ADD_VALUE", 0.20, "apothic_attributes", "damage", "percent");
         reward(stats, "perception", "apothic_attributes:arrow_damage", 0.005, "ADD_MULTIPLIED_BASE", 1.50, "apothic_attributes", "utility", "multiplier");
         reward(stats, "perception", "apothic_attributes:draw_speed", 0.005, "ADD_MULTIPLIED_BASE", 1.50, "apothic_attributes", "utility", "multiplier");
+        EpicFightNativeRewards.addDefaults(root);
         return root;
+    }
+
+    static boolean currentFormat(JsonObject root) {
+        try {
+            return root.has("format_version")
+                && root.get("format_version").getAsInt() == FORMAT_VERSION;
+        } catch (RuntimeException ignored) {
+            return false;
+        }
     }
 
     private static void reward(JsonObject stats, String stat, String id, double amount, String operation,
@@ -252,6 +297,14 @@ public final class AttributeRewardsConfig {
     private static String nullableString(JsonObject object, String key) {
         String value = string(object, key, "").trim();
         return value.isEmpty() ? null : value;
+    }
+
+    static boolean nativeRewardEnabled(JsonObject root, JsonObject reward) {
+        String nativeIntegration = nullableString(reward, "native_integration");
+        if (nativeIntegration == null) return true;
+        if (!nativeIntegration.matches("[a-z][a-z0-9_]{1,63}"))
+            throw new IllegalArgumentException("invalid native_integration");
+        return EpicFightNativeRewards.nativeEnabled(root, nativeIntegration);
     }
 
     private static double finite(JsonObject object, String key, double fallback) {

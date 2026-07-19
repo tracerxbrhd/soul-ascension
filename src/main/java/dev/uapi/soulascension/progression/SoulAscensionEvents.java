@@ -4,6 +4,7 @@ import dev.uapi.soulascension.config.SoulAscensionConfigManager;
 import dev.uapi.soulascension.config.SoulAscensionRuntimeConfig;
 import dev.uapi.soulascension.config.AttributeRewardsConfig;
 import dev.uapi.soulascension.item.WitheredMemoryPotionItem;
+import dev.uapi.soulascension.integration.OptionalIntegrations;
 import dev.uapi.soulascension.network.SoulAscensionNetwork;
 import dev.uapi.soulascension.data.DamageLedger;
 import dev.uapi.soulascension.data.SoulAscensionAttachments;
@@ -154,6 +155,7 @@ public final class SoulAscensionEvents {
 
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
+        OptionalIntegrations.flushAttributeRefreshes(event.getServer());
         if (!TitleRegistry.hasTimeBasedTitles() || ++titleTimer < 200) return;
         titleTimer = 0;
         event.getServer().getPlayerList().getPlayers().forEach(TitleService::evaluate);

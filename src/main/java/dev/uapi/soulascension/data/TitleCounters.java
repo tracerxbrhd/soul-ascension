@@ -10,13 +10,17 @@ import java.util.Map;
 public record TitleCounters(Map<ResourceLocation, Long> entityKills,
                             Map<ResourceLocation, Long> itemsCollected,
                             Map<ResourceLocation, Long> blocksMined) {
+    public static final int DATA_VERSION = 2;
     private static final Codec<Map<ResourceLocation, Long>> COUNTERS =
         Codec.unboundedMap(ResourceLocation.CODEC, Codec.LONG);
     public static final Codec<TitleCounters> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+        PersistedDataVersion.codec(DATA_VERSION, "Soul title counters").fieldOf("dataVersion")
+            .forGetter(ignored -> DATA_VERSION),
         COUNTERS.optionalFieldOf("entityKills", Map.of()).forGetter(TitleCounters::entityKills),
         COUNTERS.optionalFieldOf("itemsCollected", Map.of()).forGetter(TitleCounters::itemsCollected),
         COUNTERS.optionalFieldOf("blocksMined", Map.of()).forGetter(TitleCounters::blocksMined)
-    ).apply(instance, TitleCounters::new));
+    ).apply(instance, (dataVersion, entityKills, itemsCollected, blocksMined) ->
+        new TitleCounters(entityKills, itemsCollected, blocksMined)));
 
     public TitleCounters {
         entityKills = Map.copyOf(entityKills); itemsCollected = Map.copyOf(itemsCollected); blocksMined = Map.copyOf(blocksMined);

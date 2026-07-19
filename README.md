@@ -7,11 +7,20 @@ SOUL-ASCENSION is a configurable RPG progression mod. Dealing valid damage advan
 - Minecraft 1.21.1
 - NeoForge 21.1.234
 - Java 21
-- U-API 1.3.1 or newer
+- U-API 2.x (`[2.0.0,3.0.0)`)
 
-Current version: 1.3.1. Mod ID: `soul_ascension`.
+Epic Fight is optional. When Epic Fight `21.17.3.1` or a newer `21.17.x` release is
+installed, Soul Ascension automatically enables native Strength, Endurance and Agility
+rewards through Epic Fight's public API. Soul Ascension still builds and runs without Epic
+Fight; no Epic Fight classes, code or assets are bundled in the Soul Ascension JAR. See
+[`docs/EPIC_FIGHT_INTEGRATION.md`](docs/EPIC_FIGHT_INTEGRATION.md) for the exact version,
+balance and configuration contract.
 
-**1.3.x is a breaking release line. Old progression/config data may not be compatible.** The player progression attachment and network protocol were deliberately replaced; no migration layer is provided.
+Current version: 2.0.0. Mod ID: `soul_ascension`.
+
+Version 2.0 is a clean-install-only release. Worlds, player attachments and configuration files
+from Soul Ascension 1.x are not supported and are not migrated. Start 2.0 with a new world/player
+data and a newly generated `config/uapi/soul-ascension/` directory.
 
 ## Character progression
 
@@ -39,6 +48,7 @@ Configuration files are created in `config/uapi/soul-ascension/` and are edited 
 
 There is no custom in-game configuration editor. See [`docs/config.md`](docs/config.md) and [`docs/ATTRIBUTE_REWARDS.md`](docs/ATTRIBUTE_REWARDS.md).
 
-Resource-pack paths, including the replaceable Soul Lens model and texture, are documented in [`docs/resourcepacks.md`](docs/resourcepacks.md). Titles and optional integrations are documented in [`docs/TITLES_AND_INTEGRATIONS.md`](docs/TITLES_AND_INTEGRATIONS.md).
+Resource-pack paths, including the replaceable Soul Lens model and texture, are documented in [`docs/resourcepacks.md`](docs/resourcepacks.md). Titles and optional integrations are documented in [`docs/TITLES_AND_INTEGRATIONS.md`](docs/TITLES_AND_INTEGRATIONS.md); native Epic Fight support has a dedicated [`integration guide`](docs/EPIC_FIGHT_INTEGRATION.md).
 
-Build on Windows with `gradlew.bat build`. The resulting artifact is `build/libs/soul-ascension-1.3.1+mc1.21.1.jar`.
+Build on Windows with `gradlew.bat build`. The resulting artifact is
+`build/libs/soul-ascension-2.0.0+mc1.21.1.jar`.

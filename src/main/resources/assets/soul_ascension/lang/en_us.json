@@ -5,6 +5,7 @@
   "screen.soul_ascension.public_profile": "Public Character Profile",
   "screen.soul_ascension.public_attributes": "Public Attributes",
   "screen.soul_ascension.read_only": "Read-only profile",
+  "screen.soul_ascension.incompatible_data": "Progress data is read-only (newer or invalid format)",
   "screen.soul_ascension.level": "Level: %s",
   "screen.soul_ascension.progress": "Damage XP: %s",
   "screen.soul_ascension.points": "Free points: %s",
@@ -151,5 +152,17 @@
   "overlay.soul_ascension.soul_lens.aim_at_player": "Aim at a player to inspect their soul profile.",
   "overlay.soul_ascension.soul_lens.loading": "Reading soul signature...",
   "overlay.soul_ascension.soul_lens.public_attributes": "Public Attributes",
-  "screen.soul_ascension.max_level": "MAX LEVEL"
+  "screen.soul_ascension.max_level": "MAX LEVEL",
+  "profile_facet.soul_ascension.title": "Soul Ascension",
+  "profile_facet.soul_ascension.level": "Level",
+  "profile_facet.soul_ascension.active_title": "Active title",
+  "profile_facet.soul_ascension.strength": "Strength",
+  "profile_facet.soul_ascension.endurance": "Endurance",
+  "profile_facet.soul_ascension.agility": "Agility",
+  "profile_facet.soul_ascension.intelligence": "Intelligence",
+  "profile_facet.soul_ascension.perception": "Perception",
+  "command.soul_ascension.profile.public.status": "Public Soul profile: %s",
+  "command.soul_ascension.profile.public.updated": "Public Soul profile set to %s",
+  "message.soul_ascension.public_profile.private": "%s has made their Soul profile private",
+  "overlay.soul_ascension.soul_lens.private": "This Soul profile is private."
 }

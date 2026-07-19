@@ -20,12 +20,9 @@ public final class SoulAscensionService {
     private SoulAscensionService() {}
 
     public static PlayerProgress get(ServerPlayer player) {
-        PlayerProgress progress = player.getData(SoulAscensionAttachments.PROGRESS);
-        if (progress.schemaVersion() == PlayerProgress.SCHEMA_VERSION) return progress;
-        PlayerProgress initial = PlayerProgress.initial().withRequiredDamage(requiredDamage(0));
-        player.setData(SoulAscensionAttachments.PROGRESS, initial);
-        return initial;
+        return player.getData(SoulAscensionAttachments.PROGRESS);
     }
+
     public static double requiredDamage(int level) {
         SoulAscensionRuntimeConfig config = SoulAscensionConfigManager.current();
         int safeLevel = Math.max(1, level);
@@ -42,6 +39,7 @@ public final class SoulAscensionService {
 
     public static void refreshRules(ServerPlayer player) {
         PlayerProgress old = get(player);
+        if (!writable(old)) return;
         int maximum = SoulAscensionConfigManager.current().maxLevel();
         int level = maximum > 0 ? Math.min(old.level(), maximum) : old.level();
         double progress = maximum > 0 && level >= maximum ? 0 : old.damageProgress();
@@ -54,8 +52,9 @@ public final class SoulAscensionService {
     }
 
     public static int addExperience(ServerPlayer player, double amount) {
-        if (amount <= 0) return 0;
+        if (!Double.isFinite(amount) || amount <= 0) return 0;
         PlayerProgress old = get(player);
+        if (!writable(old)) return 0;
         int maxLevel = SoulAscensionConfigManager.current().maxLevel();
         if (maxLevel > 0 && old.level() >= maxLevel) return 0;
         int level = old.level();
@@ -85,6 +84,7 @@ public final class SoulAscensionService {
     public static boolean applyAllocation(ServerPlayer player, int[] increments) {
         if (increments == null || increments.length != Stat.values().length) return false;
         PlayerProgress old = get(player);
+        if (!writable(old)) return false;
         long requested = 0;
         for (int index = 0; index < increments.length; index++) {
             int increment = increments[index];
@@ -93,8 +93,10 @@ public final class SoulAscensionService {
             if (requested > old.unspentPoints()) return false;
             SoulAscensionRuntimeConfig config = SoulAscensionConfigManager.current();
             int maximum = config.maxPointsPerStat();
+            long resultingValue = (long) old.stat(Stat.values()[index]) + increment;
+            if (resultingValue > Integer.MAX_VALUE) return false;
             if (config.limitStatPoints() && maximum > 0
-                && old.stat(Stat.values()[index]) + increment > maximum) return false;
+                && resultingValue > maximum) return false;
         }
         if (requested <= 0) return false;
         PlayerProgress updated = new PlayerProgress(old.level(), old.damageProgress(), old.requiredDamage(),
@@ -121,7 +123,9 @@ public final class SoulAscensionService {
     public static boolean increaseStatFromBook(ServerPlayer player, Stat stat) {
         SoulAscensionRuntimeConfig config = SoulAscensionConfigManager.current();
         PlayerProgress old = get(player);
+        if (!writable(old)) return false;
         int maxPerStat = config.maxPointsPerStat();
+        if (old.stat(stat) == Integer.MAX_VALUE) return false;
         if (config.limitStatPoints() && maxPerStat > 0 && old.stat(stat) >= maxPerStat) return false;
         PlayerProgress updated = incrementStatWithoutPointCost(old, stat);
         player.setData(SoulAscensionAttachments.PROGRESS, updated);
@@ -135,7 +139,9 @@ public final class SoulAscensionService {
         SoulAscensionRuntimeConfig config = SoulAscensionConfigManager.current();
         if (delta < 0 && !config.allowStatDecrease()) return false;
         PlayerProgress old = get(player);
+        if (!writable(old)) return false;
         int maxPerStat = config.maxPointsPerStat();
+        if (delta > 0 && old.stat(stat) == Integer.MAX_VALUE) return false;
         if (delta > 0 && config.limitStatPoints()
             && maxPerStat > 0 && old.stat(stat) >= maxPerStat) return false;
         PlayerProgress updated = old.changeStat(stat, delta, config.refundDecreasedPoints());
@@ -148,7 +154,9 @@ public final class SoulAscensionService {
 
     public static boolean reset(ServerPlayer player) {
         if (!SoulAscensionConfigManager.current().allowReset()) return false;
-        PlayerProgress updated = get(player).resetStats();
+        PlayerProgress old = get(player);
+        if (!writable(old)) return false;
+        PlayerProgress updated = old.resetStats();
         player.setData(SoulAscensionAttachments.PROGRESS, updated);
         AttributeService.apply(player, updated);
         TitleService.evaluate(player);
@@ -157,7 +165,8 @@ public final class SoulAscensionService {
 
     public static ResetResult resetWithAmnesia(ServerPlayer player) {
         PlayerProgress old = get(player);
-        int allocated = old.strength() + old.endurance() + old.agility() + old.intelligence() + old.perception();
+        int allocated = allocatedPoints(old);
+        if (!writable(old)) return new ResetResult(false, allocated, 0, 0);
         SoulAscensionRuntimeConfig config = SoulAscensionConfigManager.current();
         if (!config.allowReset())
             return new ResetResult(false, allocated, 0, 0);
@@ -173,20 +182,36 @@ public final class SoulAscensionService {
     }
 
     public static void grantBonusAttributePoints(ServerPlayer player, int amount) {
-        if (amount <= 0) return;
+        grantBonusAttributePointsIfWritable(player, amount);
+    }
+
+    public static boolean grantBonusAttributePointsIfWritable(ServerPlayer player, int amount) {
+        if (amount <= 0) return false;
         PlayerProgress old = get(player);
+        if (!writable(old)) return false;
         player.setData(SoulAscensionAttachments.PROGRESS, old.withAdditionalUnspentPoints(amount));
+        return true;
     }
 
     public static void addPoints(ServerPlayer player, int amount) {
         grantBonusAttributePoints(player, amount);
     }
 
+    public static boolean addPointsIfWritable(ServerPlayer player, int amount) {
+        return grantBonusAttributePointsIfWritable(player, amount);
+    }
+
     public static void resetAll(ServerPlayer player) {
+        resetAllIfWritable(player);
+    }
+
+    public static boolean resetAllIfWritable(ServerPlayer player) {
+        if (!writable(get(player))) return false;
         PlayerProgress initial = PlayerProgress.initial().withRequiredDamage(requiredDamage(0));
         player.setData(SoulAscensionAttachments.PROGRESS, initial);
         AttributeService.apply(player, initial);
         TitleService.evaluate(player);
+        return true;
     }
 
     public static boolean grantRewardExperience(RewardContext context, JsonObject data, RandomSource random) {
@@ -194,6 +219,7 @@ public final class SoulAscensionService {
         int max = Math.max(min, GsonHelper.getAsInt(data, "max", min));
         int amount = min + random.nextInt(max - min + 1);
         PlayerProgress progress = get(context.player());
+        if (!writable(progress)) return false;
         double intelligenceBonus = AttributeRewardsConfig.affectsSoulProgression()
             ? AttributeRewardsConfig.experienceMultiplier(progress.intelligence()) : 1.0;
         addExperience(context.player(), amount * context.instance().difficulty().rewardMultiplier() * intelligenceBonus);
@@ -203,6 +229,16 @@ public final class SoulAscensionService {
     private static int saturatedAdd(int left, int right) {
         long value = (long) left + right;
         return value >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) value;
+    }
+
+    private static int allocatedPoints(PlayerProgress progress) {
+        long total = (long) progress.strength() + progress.endurance() + progress.agility()
+            + progress.intelligence() + progress.perception();
+        return (int) Math.min(Integer.MAX_VALUE, Math.max(0L, total));
+    }
+
+    private static boolean writable(PlayerProgress progress) {
+        return progress.isUsable();
     }
 
     private static PlayerProgress incrementStatWithoutPointCost(PlayerProgress old, Stat stat) {

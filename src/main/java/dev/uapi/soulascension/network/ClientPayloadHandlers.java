@@ -13,14 +13,15 @@ public final class ClientPayloadHandlers {
 
     public static void register(PayloadRegistrar registrar) {
         registrar.playToClient(StatAllocationResultPayload.TYPE, StatAllocationResultPayload.STREAM_CODEC,
-            (payload, context) -> CharacterScreen.receiveAllocationResult(payload.accepted()));
+            (payload, context) -> context.enqueueWork(() ->
+                CharacterScreen.receiveAllocationResult(payload.accepted())));
         registrar.playToClient(TitleDefinitionsPayload.TYPE, TitleDefinitionsPayload.STREAM_CODEC,
-            (payload, context) -> ClientTitleCatalog.replace(payload.titles()));
+            (payload, context) -> context.enqueueWork(() -> ClientTitleCatalog.replace(payload.titles())));
         registrar.playToClient(PublicProfilePayload.TYPE, PublicProfilePayload.STREAM_CODEC,
-            (payload, context) -> ClientPublicProfileHandler.open(payload));
+            (payload, context) -> context.enqueueWork(() -> ClientPublicProfileHandler.open(payload)));
         registrar.playToClient(ProgressionRulesPayload.TYPE, ProgressionRulesPayload.STREAM_CODEC,
-            (payload, context) -> ClientProgressionRules.replace(payload));
+            (payload, context) -> context.enqueueWork(() -> ClientProgressionRules.replace(payload)));
         registrar.playToClient(SoulLensProfilePayload.TYPE, SoulLensProfilePayload.STREAM_CODEC,
-            (payload, context) -> SoulLensOverlay.receive(payload));
+            (payload, context) -> context.enqueueWork(() -> SoulLensOverlay.receive(payload)));
     }
 }

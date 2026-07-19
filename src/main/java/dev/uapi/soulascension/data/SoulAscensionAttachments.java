@@ -6,16 +6,13 @@ import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.ResourceLocation;
 
 public final class SoulAscensionAttachments {
     private static final DeferredRegister<AttachmentType<?>> TYPES =
         DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, SoulAscensionMod.MOD_ID);
 
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<PlayerProgress>> PROGRESS = TYPES.register(
-        "character_progress_v130", () -> AttachmentType.builder(PlayerProgress::initial).serialize(PlayerProgress.CODEC)
+        "character_progress", () -> AttachmentType.builder(PlayerProgress::initial).serialize(PlayerProgress.CODEC)
             .copyOnDeath().sync((holder, player) -> holder == player, PlayerProgress.STREAM_CODEC).build());
 
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<DamageLedger>> DAMAGE_LEDGER = TYPES.register(
@@ -29,13 +26,14 @@ public final class SoulAscensionAttachments {
         "title_counters", () -> AttachmentType.builder(TitleCounters::initial).serialize(TitleCounters.CODEC)
             .copyOnDeath().build());
 
-    private static final StreamCodec<RegistryFriendlyByteBuf, ResourceLocation> TITLE_ID_CODEC = new StreamCodec<>() {
-        @Override public ResourceLocation decode(RegistryFriendlyByteBuf buffer) { return buffer.readResourceLocation(); }
-        @Override public void encode(RegistryFriendlyByteBuf buffer, ResourceLocation value) { buffer.writeResourceLocation(value); }
-    };
-    public static final DeferredHolder<AttachmentType<?>, AttachmentType<ResourceLocation>> ACTIVE_TITLE = TYPES.register(
-        "active_title", () -> AttachmentType.builder(() -> TitleProgress.NONE).serialize(ResourceLocation.CODEC)
-            .copyOnDeath().sync((holder, player) -> true, TITLE_ID_CODEC).build());
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<SoulProfileSettings>> PROFILE_SETTINGS =
+        TYPES.register("profile_settings", () -> AttachmentType.builder(SoulProfileSettings::defaults)
+            .serialize(SoulProfileSettings.CODEC).copyOnDeath()
+            .sync((holder, player) -> holder == player, SoulProfileSettings.STREAM_CODEC).build());
+
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<ActiveTitleData>> ACTIVE_TITLE = TYPES.register(
+        "active_title", () -> AttachmentType.builder(ActiveTitleData::none).serialize(ActiveTitleData.CODEC)
+            .copyOnDeath().sync((holder, player) -> true, ActiveTitleData.STREAM_CODEC).build());
 
     private SoulAscensionAttachments() {}
     public static void register(IEventBus bus) {

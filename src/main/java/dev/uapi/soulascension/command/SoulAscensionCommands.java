@@ -1,11 +1,13 @@
 package dev.uapi.soulascension.command;
 
 import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import dev.uapi.soulascension.data.Stat;
 import dev.uapi.soulascension.data.PlayerProgress;
+import dev.uapi.soulascension.data.SoulAscensionAttachments;
 import dev.uapi.soulascension.progression.SoulAscensionService;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.CommandSourceStack;
@@ -27,6 +29,24 @@ public final class SoulAscensionCommands {
                     ", progress " + String.format("%.1f", data.damageProgress()) + ", points " + data.unspentPoints()), false);
                 return data.level();
             }))
+            .then(Commands.literal("profile")
+                .then(Commands.literal("public")
+                    .executes(context -> {
+                        ServerPlayer player = context.getSource().getPlayerOrException();
+                        boolean enabled = player.getData(SoulAscensionAttachments.PROFILE_SETTINGS).publicProfile();
+                        context.getSource().sendSuccess(() -> Component.translatable(
+                            "command.soul_ascension.profile.public.status", enabled), false);
+                        return enabled ? 1 : 0;
+                    })
+                    .then(Commands.argument("enabled", BoolArgumentType.bool()).executes(context -> {
+                        ServerPlayer player = context.getSource().getPlayerOrException();
+                        boolean enabled = BoolArgumentType.getBool(context, "enabled");
+                        player.setData(SoulAscensionAttachments.PROFILE_SETTINGS,
+                            player.getData(SoulAscensionAttachments.PROFILE_SETTINGS).withPublicProfile(enabled));
+                        context.getSource().sendSuccess(() -> Component.translatable(
+                            "command.soul_ascension.profile.public.updated", enabled), false);
+                        return 1;
+                    }))))
             .then(Commands.literal("add_xp").requires(source -> source.hasPermission(2))
                 .then(Commands.argument("player", EntityArgument.player())
                     .then(Commands.argument("amount", DoubleArgumentType.doubleArg(0))
@@ -36,9 +56,9 @@ public final class SoulAscensionCommands {
                 .then(Commands.argument("player", EntityArgument.player())
                     .then(Commands.argument("amount", IntegerArgumentType.integer())
                         .executes(context -> {
-                            SoulAscensionService.addPoints(EntityArgument.getPlayer(context, "player"),
-                                IntegerArgumentType.getInteger(context, "amount"));
-                            return 1;
+                            return SoulAscensionService.addPointsIfWritable(
+                                EntityArgument.getPlayer(context, "player"),
+                                IntegerArgumentType.getInteger(context, "amount")) ? 1 : 0;
                         }))))
             .then(Commands.literal("stat").requires(source -> source.hasPermission(2))
                 .then(Commands.argument("player", EntityArgument.player())
@@ -67,9 +87,8 @@ public final class SoulAscensionCommands {
                     TitleService.resetTitles(EntityArgument.getPlayer(context, "player")); return 1;
                 }))))
             .then(Commands.literal("reset").requires(source -> source.hasPermission(2))
-                .then(Commands.argument("player", EntityArgument.player()).executes(context -> {
-                    SoulAscensionService.resetAll(EntityArgument.getPlayer(context, "player"));
-                    return 1;
-                })));
+                .then(Commands.argument("player", EntityArgument.player()).executes(context ->
+                    SoulAscensionService.resetAllIfWritable(EntityArgument.getPlayer(context, "player"))
+                        ? 1 : 0)));
     }
 }

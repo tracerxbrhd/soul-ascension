@@ -5,6 +5,7 @@
   "screen.soul_ascension.public_profile": "Публичный профиль персонажа",
   "screen.soul_ascension.public_attributes": "Публичные атрибуты",
   "screen.soul_ascension.read_only": "Только просмотр",
+  "screen.soul_ascension.incompatible_data": "Данные прогресса доступны только для чтения (новый или повреждённый формат)",
   "screen.soul_ascension.level": "Уровень: %s",
   "screen.soul_ascension.progress": "Опыт урона: %s",
   "screen.soul_ascension.points": "Свободные очки: %s",
@@ -151,5 +152,17 @@
   "overlay.soul_ascension.soul_lens.aim_at_player": "Наведитесь на игрока, чтобы изучить профиль его души.",
   "overlay.soul_ascension.soul_lens.loading": "Чтение отпечатка души...",
   "overlay.soul_ascension.soul_lens.public_attributes": "Публичные атрибуты",
-  "screen.soul_ascension.max_level": "МАКС. УРОВЕНЬ"
+  "screen.soul_ascension.max_level": "МАКС. УРОВЕНЬ",
+  "profile_facet.soul_ascension.title": "Возвышение души",
+  "profile_facet.soul_ascension.level": "Уровень",
+  "profile_facet.soul_ascension.active_title": "Активный титул",
+  "profile_facet.soul_ascension.strength": "Сила",
+  "profile_facet.soul_ascension.endurance": "Выносливость",
+  "profile_facet.soul_ascension.agility": "Ловкость",
+  "profile_facet.soul_ascension.intelligence": "Интеллект",
+  "profile_facet.soul_ascension.perception": "Восприятие",
+  "command.soul_ascension.profile.public.status": "Публичный профиль Soul: %s",
+  "command.soul_ascension.profile.public.updated": "Публичность профиля Soul: %s",
+  "message.soul_ascension.public_profile.private": "%s закрыл свой профиль Soul",
+  "overlay.soul_ascension.soul_lens.private": "Этот профиль Soul закрыт."
 }

@@ -32,7 +32,7 @@ public final class SoulAscensionNameTagRenderer {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer viewer = minecraft.player;
         if (viewer == null || player == viewer || !shouldRender(event, player, viewer, minecraft)) return;
-        var titleId = player.getData(SoulAscensionAttachments.ACTIVE_TITLE);
+        var titleId = player.getData(SoulAscensionAttachments.ACTIVE_TITLE).titleId();
         if (titleId.equals(TitleProgress.NONE)) return;
         Component title = ClientTitleCatalog.get(titleId)
             .<Component>map(value -> Component.translatable(value.nameKey())).orElse(Component.empty());

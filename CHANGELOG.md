@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.0.0 - 2026-07-15
+
+- Requires U-API 2.x (`[2.0.0,3.0.0)`).
+- Breaking release: Soul Ascension 2.0 supports clean installations only. Player data, worlds and
+  configuration from Soul Ascension 1.x are not migrated or supported.
+- Moved the Character Screen onto U-API's retained UI lifecycle and reusable layout/components.
+- Added explicit public-profile privacy settings and exact-version rejection for every serialized
+  player attachment, including progression, titles, counters and active-title sync state.
+- Added bounded U-API profile facets to public profiles without expanding the base player snapshot.
+- Hardened Soul Lens privacy, observation throttling and client cache cleanup.
+- Added native, optional Epic Fight support for versions `>=21.17.3.1` and `<21.18` through
+  Epic Fight's public attribute and player-capability APIs.
+- Added balanced default Epic Fight rewards: Strength grants Impact, Endurance grants maximum
+  Stamina, and Agility grants Stamina Regeneration, each with a final-value cap.
+- Mirrored Strength's Impact reward into Epic Fight's hidden off-hand attribute and refresh capped
+  rewards through the official weapon-change hook after main-hand or off-hand swaps.
+- Added Epic Fight rules to the freshly generated 2.0 `attribute_rewards.json`; generated rules
+  carry `native_integration: "epicfight"` and can be disabled globally or individually.
+- Kept Epic Fight outside Soul Ascension's runtime dependencies and packaged JAR. Damage-based Soul
+  XP continues to use the final NeoForge damage event exactly once, including Epic Fight combat.
+- Preserved the purple visual identity and server-authoritative allocation flow.
+- Finalized and frozen the 2.0.0 feature set after client validation; further gameplay/UI changes
+  move to a later version.
+
 ## 1.3.1 - 2026-07-10
 
 - Release build for the 1.3.x progression line.

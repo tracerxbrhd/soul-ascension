@@ -14,22 +14,28 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 public final class SoulAscensionNetwork {
+    /** Exact 2.0 wire contract, including versioned synchronized player attachments. */
+    public static final String PROTOCOL_VERSION = "11";
+
     private SoulAscensionNetwork() {}
 
     public static void register(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("8");
+        var registrar = event.registrar(PROTOCOL_VERSION);
         registrar.playToServer(ApplyStatAllocationPayload.TYPE, ApplyStatAllocationPayload.STREAM_CODEC,
-            (payload, context) -> {
+            (payload, context) -> context.enqueueWork(() -> {
                 if (!(context.player() instanceof ServerPlayer player)) return;
                 boolean accepted = SoulAscensionService.applyAllocation(player, payload.increments());
                 PacketDistributor.sendToPlayer(player, new StatAllocationResultPayload(accepted));
-            });
-        registrar.playToServer(SelectTitlePayload.TYPE, SelectTitlePayload.STREAM_CODEC, (payload, context) -> {
+            }));
+        registrar.playToServer(SelectTitlePayload.TYPE, SelectTitlePayload.STREAM_CODEC,
+            (payload, context) -> context.enqueueWork(() -> {
             if (context.player() instanceof ServerPlayer player) TitleService.select(player, payload.titleId());
-        });
-        registrar.playToServer(SoulLensRequestPayload.TYPE, SoulLensRequestPayload.STREAM_CODEC, (payload, context) -> {
-            if (context.player() instanceof ServerPlayer player) SoulLensService.inspect(player, payload.targetId());
-        });
+        }));
+        registrar.playToServer(SoulLensRequestPayload.TYPE, SoulLensRequestPayload.STREAM_CODEC,
+            (payload, context) -> context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer player)
+                SoulLensService.inspect(player, payload.targetId(), payload.observationId());
+        }));
         if (FMLEnvironment.dist == Dist.CLIENT) registerClientHandlers(registrar);
         else registerNoopClientHandlers(registrar);
     }

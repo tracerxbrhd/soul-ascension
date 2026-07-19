@@ -149,13 +149,13 @@ if ($parts.Count -lt 2 -or $parts[0] -ne "0" -or $parts[1] -ne "0") {
 }
 
 if ($modVersion -notmatch "^\d+\.\d+\.\d+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?$") {
-    throw "mod_version '$modVersion' is not supported. Expected SemVer-like value, for example 1.3.0 or 1.4.0-beta."
+    throw "mod_version '$modVersion' is not supported. Expected SemVer-like value, for example 2.0.0 or 2.1.0-beta."
 }
 if ($uApiVersion -notmatch "^\d+\.\d+\.\d+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?$") {
-    throw "u_api_version '$uApiVersion' is not supported. Expected SemVer-like value, for example 1.3.1."
+    throw "u_api_version '$uApiVersion' is not supported. Expected an exact SemVer-like value, for example 2.0.0."
 }
-if ($uApiVersionRange -notmatch "^\[[^\s,]+,\)$") {
-    throw "u_api_version_range '$uApiVersionRange' is not supported. Expected value like [1.3.1,)."
+if ($uApiVersionRange -notmatch "^\[[^\s,]+,(?:[^\s,]+)?\)$") {
+    throw "u_api_version_range '$uApiVersionRange' is not supported. Expected value like [2.0.0,3.0.0)."
 }
 if ($minecraftVersion -notmatch "^\d+\.\d+(?:\.\d+)?$") {
     throw "minecraft_version '$minecraftVersion' is not supported. Expected value like 1.21.1."

@@ -1,10 +1,18 @@
 package dev.uapi.soulascension.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import dev.uapi.client.hud.HudAnchor;
+import dev.uapi.client.hud.HudElement;
+import dev.uapi.client.hud.HudElementRegistration;
+import dev.uapi.client.hud.HudPlacement;
+import dev.uapi.client.hud.HudRenderContext;
+import dev.uapi.client.hud.HudTickContext;
+import dev.uapi.client.hud.UApiHud;
 import dev.uapi.soulascension.SoulAscensionMod;
 import dev.uapi.soulascension.network.ClientProgressionRules;
 import dev.uapi.soulascension.network.ClientTitleCatalog;
 import dev.uapi.soulascension.network.PublicProfileData;
+import dev.uapi.soulascension.network.SoulLensProfileData;
 import dev.uapi.soulascension.network.SoulLensProfilePayload;
 import dev.uapi.soulascension.network.SoulLensRequestPayload;
 import net.minecraft.client.Minecraft;
@@ -36,19 +44,60 @@ public final class SoulLensOverlay {
     private static final int STAT_COUNT = 5;
     private static final int ACTIVE_CONTENT_TOP = 43;
     private static final int ATTRIBUTE_CLIP_OFFSET = 151;
+    private static final Component OVERLAY_TITLE =
+        Component.translatable("overlay.soul_ascension.soul_lens.title");
+    private static final Component AIM_AT_PLAYER =
+        Component.translatable("overlay.soul_ascension.soul_lens.aim_at_player");
+    private static final Component LOADING_MESSAGE =
+        Component.translatable("overlay.soul_ascension.soul_lens.loading");
+    private static final Component OUT_OF_RANGE_MESSAGE =
+        Component.translatable("overlay.soul_ascension.soul_lens.out_of_range");
+    private static final Component PRIVATE_MESSAGE =
+        Component.translatable("overlay.soul_ascension.soul_lens.private");
+    private static final Component PUBLIC_ATTRIBUTES =
+        Component.translatable("overlay.soul_ascension.soul_lens.public_attributes");
+    private static final Component[] STAT_NAMES = {
+        Component.translatable("stat.soul_ascension.short.strength"),
+        Component.translatable("stat.soul_ascension.short.endurance"),
+        Component.translatable("stat.soul_ascension.short.agility"),
+        Component.translatable("stat.soul_ascension.short.intelligence"),
+        Component.translatable("stat.soul_ascension.short.perception")
+    };
     private static UUID targetId;
     private static int status = NO_TARGET;
-    private static PublicProfileData profile;
+    private static SoulLensProfileData profile;
     private static List<CachedAttributeRow> cachedAttributeRows = List.of();
     private static Component cachedTitle = Component.empty();
+    private static Component cachedPlayerName = Component.empty();
+    private static Component cachedLevel = Component.empty();
+    private static final String[] cachedStatValues = new String[STAT_COUNT];
     private static int ticksSinceRequest;
     private static int targetScanTicks;
     private static int scroll;
+    private static long observationId;
+    private static long titleCatalogRevision = -1;
+    private static HudElementRegistration hudRegistration;
+    private static final HudElement HUD_ELEMENT = new HudElement() {
+        @Override public ResourceLocation id() { return SoulAscensionMod.id("soul_lens_overlay"); }
+        @Override public int width() { return overlayWidth(Minecraft.getInstance().getWindow().getGuiScaledWidth()); }
+        @Override public int height() { return overlayHeight(Minecraft.getInstance().getWindow().getGuiScaledHeight()); }
+        @Override public HudPlacement defaultPlacement() {
+            return new HudPlacement(HudAnchor.CENTER_LEFT, 6, 0, 1.0F, true, 100);
+        }
+        @Override public boolean visible(HudTickContext context) { return shouldRender(context.minecraft()); }
+        @Override public void tick(HudTickContext context) { SoulLensOverlay.tick(context.minecraft()); }
+        @Override public void render(HudRenderContext context) { SoulLensOverlay.render(context); }
+    };
 
     private SoulLensOverlay() {}
 
-    public static void tick() {
-        Minecraft minecraft = Minecraft.getInstance();
+    public static synchronized void registerHud() {
+        if (hudRegistration == null || !hudRegistration.isActive())
+            hudRegistration = UApiHud.register(HUD_ELEMENT);
+    }
+
+    private static void tick(Minecraft minecraft) {
+        if (titleCatalogRevision != ClientTitleCatalog.revision()) rebuildCache();
         LocalPlayer player = minecraft.player;
         if (!isUsing(player) || minecraft.level == null || minecraft.screen != null) {
             clear();
@@ -58,16 +107,20 @@ public final class SoulLensOverlay {
             targetScanTicks = 0;
             Player target = findTarget(minecraft, ClientProgressionRules.soulLensRange());
             if (target == null) {
+                if (targetId != null) observationId++;
                 targetId = null;
                 status = NO_TARGET;
                 profile = null;
                 cachedAttributeRows = List.of();
                 cachedTitle = Component.empty();
+                cachedPlayerName = Component.empty();
+                cachedLevel = Component.empty();
                 scroll = 0;
                 return;
             }
             boolean changed = !target.getUUID().equals(targetId);
             if (changed) {
+                observationId++;
                 targetId = target.getUUID();
                 status = LOADING;
                 profile = null;
@@ -79,12 +132,12 @@ public final class SoulLensOverlay {
         }
         if (targetId != null && ++ticksSinceRequest >= ClientProgressionRules.soulLensUpdateInterval()) {
             ticksSinceRequest = 0;
-            PacketDistributor.sendToServer(new SoulLensRequestPayload(targetId));
+            PacketDistributor.sendToServer(new SoulLensRequestPayload(targetId, observationId));
         }
     }
 
     public static void receive(SoulLensProfilePayload payload) {
-        if (!payload.targetId().equals(targetId)) return;
+        if (!payload.targetId().equals(targetId) || payload.observationId() != observationId) return;
         status = payload.status();
         profile = payload.profile();
         rebuildCache();
@@ -92,13 +145,19 @@ public final class SoulLensOverlay {
     }
 
     private static void rebuildCache() {
+        titleCatalogRevision = ClientTitleCatalog.revision();
         if (profile == null) {
             cachedAttributeRows = List.of();
             cachedTitle = Component.empty();
+            cachedPlayerName = Component.empty();
+            cachedLevel = Component.empty();
             return;
         }
-        cachedTitle = ClientTitleCatalog.get(profile.activeTitle())
-            .<Component>map(value -> Component.translatable(value.nameKey())).orElse(Component.empty());
+        cachedTitle = ClientTitleCatalog.name(profile.activeTitle());
+        cachedPlayerName = Component.literal(profile.playerName());
+        cachedLevel = Component.translatable("screen.soul_ascension.level", profile.level());
+        for (int index = 0; index < cachedStatValues.length; index++)
+            cachedStatValues[index] = Integer.toString(statValue(index));
         java.util.ArrayList<CachedAttributeRow> rows = new java.util.ArrayList<>();
         for (PublicProfileData.PublicAttribute attribute : profile.attributes()) {
             var holder = BuiltInRegistries.ATTRIBUTE.getHolder(attribute.id()).orElse(null);
@@ -110,28 +169,29 @@ public final class SoulLensOverlay {
     }
 
     public static boolean handleScroll(double delta) {
-        if (!isUsing(Minecraft.getInstance().player) || !ClientProgressionRules.soulLensBlockHotbarScroll()) return false;
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.screen != null || !isUsing(minecraft.player)
+            || !ClientProgressionRules.soulLensBlockHotbarScroll()) return false;
         if (profile != null)
             scroll = Math.max(0, Math.min(maxScroll(), scroll - (int) Math.signum(delta) * 18));
         return true;
     }
 
-    public static void render(GuiGraphics graphics) {
-        Minecraft minecraft = Minecraft.getInstance();
-        if (!isUsing(minecraft.player) || minecraft.options.hideGui) return;
-        if (status == NO_TARGET && !ClientProgressionRules.soulLensShowIdleHint()) return;
+    private static void render(HudRenderContext context) {
+        Minecraft minecraft = context.minecraft();
+        GuiGraphics graphics = context.graphics();
+        if (!shouldRender(minecraft)) return;
 
         boolean active = status == SoulLensProfilePayload.VISIBLE && profile != null;
         double opacity = active ? ClientProgressionRules.soulLensActiveOverlayOpacity()
             : ClientProgressionRules.soulLensIdleOverlayOpacity();
-        int width = active ? Math.min(270, Math.max(210, graphics.guiWidth() / 3))
-            : Math.min(250, Math.max(180, graphics.guiWidth() / 4));
-        int height = active ? activeHeight(graphics.guiHeight()) : status == NO_TARGET ? 64 : 78;
-        int x = 12;
-        int y = Math.max(8, (graphics.guiHeight() - height) / 2);
+        int width = context.bounds().width();
+        int height = context.bounds().height();
+        int x = 0;
+        int y = 0;
 
         blit(graphics, PANEL, x, y, width, height, opacity);
-        graphics.drawString(minecraft.font, Component.translatable("overlay.soul_ascension.soul_lens.title"),
+        graphics.drawString(minecraft.font, OVERLAY_TITLE,
             x + 11, y + 11, color(SoulUiTheme.TEXT, opacity), false);
         graphics.fill(x + 9, y + 29, x + width - 9, y + 30, color(SoulUiTheme.DIVIDER, opacity));
         blit(graphics, INSET, x + 8, y + 37, width - 16, height - 45, opacity);
@@ -156,21 +216,18 @@ public final class SoulLensOverlay {
         if (!cachedTitle.getString().isEmpty())
             graphics.drawCenteredString(minecraft.font, cachedTitle, x + width / 2, y + 3,
                 color(SoulUiTheme.ACCENT, opacity));
-        graphics.drawCenteredString(minecraft.font, Component.literal(profile.playerName()), x + width / 2, y + 15,
+        graphics.drawCenteredString(minecraft.font, cachedPlayerName, x + width / 2, y + 15,
             color(SoulUiTheme.TEXT, opacity));
-        graphics.drawCenteredString(minecraft.font, Component.translatable("screen.soul_ascension.level", profile.level()),
+        graphics.drawCenteredString(minecraft.font, cachedLevel,
             x + width / 2, y + 27, color(SoulUiTheme.MUTED, opacity));
         graphics.fill(x + 5, y + 40, x + width - 5, y + 41, color(SoulUiTheme.DIVIDER, opacity));
 
-        String[] names = {"strength", "endurance", "agility", "intelligence", "perception"};
-        int[] values = {profile.strength(), profile.endurance(), profile.agility(), profile.intelligence(),
-            profile.perception()};
         int statY = y + 46;
-        for (int index = 0; index < names.length; index++) {
+        for (int index = 0; index < STAT_NAMES.length; index++) {
             int rowY = statY + index * STAT_ROW_HEIGHT;
             drawRow(graphics, x, rowY, width, 15, opacity);
-            Component name = Component.translatable("stat.soul_ascension.short." + names[index]);
-            String valueText = Integer.toString(values[index]);
+            Component name = STAT_NAMES[index];
+            String valueText = cachedStatValues[index];
             int valueX = x + width - 5 - minecraft.font.width(valueText);
             graphics.drawString(minecraft.font, trim(minecraft, name, valueX - x - 9), x + 4, rowY + 3,
                 color(SoulUiTheme.TEXT, opacity), false);
@@ -179,7 +236,7 @@ public final class SoulLensOverlay {
         }
 
         int attributesTop = statY + STAT_COUNT * STAT_ROW_HEIGHT + 6;
-        graphics.drawString(minecraft.font, Component.translatable("overlay.soul_ascension.soul_lens.public_attributes"),
+        graphics.drawString(minecraft.font, PUBLIC_ATTRIBUTES,
             x + 3, attributesTop, color(SoulUiTheme.ACCENT, opacity), false);
         int clipTop = attributesTop + 14;
         int clipBottom = y + height;
@@ -204,10 +261,11 @@ public final class SoulLensOverlay {
 
     private static Component stateMessage() {
         return switch (status) {
-            case NO_TARGET -> Component.translatable("overlay.soul_ascension.soul_lens.aim_at_player");
-            case LOADING -> Component.translatable("overlay.soul_ascension.soul_lens.loading");
-            case SoulLensProfilePayload.OUT_OF_RANGE -> Component.translatable("overlay.soul_ascension.soul_lens.out_of_range");
-            default -> profile == null ? Component.translatable("overlay.soul_ascension.soul_lens.loading") : null;
+            case NO_TARGET -> AIM_AT_PLAYER;
+            case LOADING -> LOADING_MESSAGE;
+            case SoulLensProfilePayload.OUT_OF_RANGE -> OUT_OF_RANGE_MESSAGE;
+            case SoulLensProfilePayload.PRIVATE -> PRIVATE_MESSAGE;
+            default -> profile == null ? LOADING_MESSAGE : null;
         };
     }
 
@@ -231,11 +289,19 @@ public final class SoulLensOverlay {
             && player.getUseItem().is(SoulAscensionMod.SOUL_LENS.get());
     }
 
+    private static boolean shouldRender(Minecraft minecraft) {
+        return isUsing(minecraft.player) && !minecraft.options.hideGui
+            && (status != NO_TARGET || ClientProgressionRules.soulLensShowIdleHint());
+    }
+
     private static void clear() {
+        if (targetId != null) observationId++;
         targetId = null;
         profile = null;
         cachedAttributeRows = List.of();
         cachedTitle = Component.empty();
+        cachedPlayerName = Component.empty();
+        cachedLevel = Component.empty();
         status = NO_TARGET;
         ticksSinceRequest = 0;
         targetScanTicks = 0;
@@ -246,11 +312,33 @@ public final class SoulLensOverlay {
         return Math.min(340, Math.max(230, guiHeight - 52));
     }
 
+    private static int overlayWidth(int guiWidth) {
+        boolean active = status == SoulLensProfilePayload.VISIBLE && profile != null;
+        return active ? Math.min(270, Math.max(210, guiWidth / 3))
+            : Math.min(250, Math.max(180, guiWidth / 4));
+    }
+
+    private static int overlayHeight(int guiHeight) {
+        boolean active = status == SoulLensProfilePayload.VISIBLE && profile != null;
+        return active ? activeHeight(guiHeight) : status == NO_TARGET ? 64 : 78;
+    }
+
     private static int maxScroll() {
         if (profile == null) return 0;
         int visible = Math.max(20, activeHeight(Minecraft.getInstance().getWindow().getGuiScaledHeight())
             - ATTRIBUTE_CLIP_OFFSET - ACTIVE_CONTENT_TOP);
         return Math.max(0, cachedAttributeRows.size() * STAT_ROW_HEIGHT - visible);
+    }
+
+    private static int statValue(int index) {
+        return switch (index) {
+            case 0 -> profile.strength();
+            case 1 -> profile.endurance();
+            case 2 -> profile.agility();
+            case 3 -> profile.intelligence();
+            case 4 -> profile.perception();
+            default -> throw new IndexOutOfBoundsException(index);
+        };
     }
 
     private static void clampScroll() {
