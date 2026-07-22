@@ -20,6 +20,10 @@ hs_err_pid*
 
 # Common working directory
 run
+run-client-*/
+run-server-*/
+run-gametest-*/
+run-data-*/
 
 # Runtime output
 logs/

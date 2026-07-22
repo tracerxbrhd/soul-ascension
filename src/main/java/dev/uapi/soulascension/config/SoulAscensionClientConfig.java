@@ -9,23 +9,23 @@ import java.util.Optional;
 
 public final class SoulAscensionClientConfig {
     static final String DEFAULT_HIDDEN_ATTRIBUTES = String.join(",",
-        "minecraft:generic.max_absorption",
-        "minecraft:generic.flying_speed",
-        "minecraft:generic.explosion_knockback_resistance",
-        "minecraft:player.block_break_speed",
-        "minecraft:generic.fall_damage_multiplier",
-        "minecraft:player.sweeping_damage_ratio",
-        "minecraft:generic.safe_fall_distance",
-        "minecraft:player.mining_efficiency",
-        "minecraft:player.sneaking_speed",
-        "minecraft:player.submerged_mining_speed",
-        "minecraft:generic.burning_time",
-        "minecraft:generic.gravity",
-        "minecraft:generic.jump_strength",
-        "minecraft:generic.movement_efficiency",
-        "minecraft:generic.scale",
-        "minecraft:generic.water_movement_efficiency",
-        "minecraft:generic.oxygen_bonus",
+        "minecraft:max_absorption",
+        "minecraft:flying_speed",
+        "minecraft:explosion_knockback_resistance",
+        "minecraft:block_break_speed",
+        "minecraft:fall_damage_multiplier",
+        "minecraft:sweeping_damage_ratio",
+        "minecraft:safe_fall_distance",
+        "minecraft:mining_efficiency",
+        "minecraft:sneaking_speed",
+        "minecraft:submerged_mining_speed",
+        "minecraft:burning_time",
+        "minecraft:gravity",
+        "minecraft:jump_strength",
+        "minecraft:movement_efficiency",
+        "minecraft:scale",
+        "minecraft:water_movement_efficiency",
+        "minecraft:oxygen_bonus",
         "neoforge:creative_flight",
         "neoforge:name_tag_distance",
         "neoforge:nametag_distance",
@@ -54,7 +54,7 @@ public final class SoulAscensionClientConfig {
             .define("hidden_attributes", DEFAULT_HIDDEN_ATTRIBUTES);
         VISIBLE_ATTRIBUTES = builder.comment(
             "Comma-separated attribute IDs that must be shown even if they are in hiddenAttributes.",
-            "Default: empty. Add minecraft:generic.oxygen_bonus here to opt in to Oxygen Bonus.")
+            "Default: empty. Add minecraft:oxygen_bonus here to opt in to Oxygen Bonus.")
             .define("visible_attributes", "");
         ATTRIBUTE_CATEGORIES = builder.comment(
             "Semicolon-separated attribute-to-category overrides: attribute_id=category.",
@@ -88,7 +88,7 @@ public final class SoulAscensionClientConfig {
     public static Optional<String> categoryOverride(Identifier id) {
         for (String entry : SoulAscensionClientConfigManager.current().attributeCategories().split(";")) {
             String[] parts = entry.trim().split("=", 2);
-            if (parts.length == 2 && parts[0].trim().equals(id.toString())) {
+            if (parts.length == 2 && configuredIdMatches(parts[0], id)) {
                 String category = parts[1].trim().toLowerCase(Locale.ROOT);
                 if (!category.isEmpty()) return Optional.of(category);
             }
@@ -97,7 +97,16 @@ public final class SoulAscensionClientConfig {
     }
 
     private static boolean contains(String configured, Identifier id) {
-        for (String value : configured.split(",")) if (value.trim().equals(id.toString())) return true;
+        for (String value : configured.split(",")) if (configuredIdMatches(value, id)) return true;
         return false;
+    }
+
+    private static boolean configuredIdMatches(String configured, Identifier id) {
+        try {
+            return AttributeRewardsConfig.canonicalAttributeId(Identifier.parse(configured.trim()))
+                .equals(AttributeRewardsConfig.canonicalAttributeId(id));
+        } catch (RuntimeException ignored) {
+            return false;
+        }
     }
 }

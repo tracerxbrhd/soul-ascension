@@ -187,7 +187,7 @@ public final class AttributeRewardsConfig {
                     if (!entry.getValue().isJsonObject()) throw new IllegalArgumentException("reward must be an object");
                     JsonObject value = entry.getValue().getAsJsonObject();
                     if (!bool(value, "enabled", true)) continue;
-                    Identifier attributeId = Identifier.parse(entry.getKey());
+                    Identifier attributeId = canonicalAttributeId(Identifier.parse(entry.getKey()));
                     String requiredMod = nullableString(value, "required_mod");
                     if (requiredMod != null && !requiredMod.matches("[a-z][a-z0-9_]{1,63}"))
                         throw new IllegalArgumentException("invalid required_mod");
@@ -233,20 +233,20 @@ public final class AttributeRewardsConfig {
         intelligence.addProperty("affects_vanilla_experience", true);
         intelligence.addProperty("affects_soul_progression", true);
 
-        reward(stats, "strength", "minecraft:generic.attack_damage", 0.5, "ADD_VALUE", null, null, "damage", "number");
-        reward(stats, "endurance", "minecraft:generic.max_health", 0.5, "ADD_VALUE", null, null, "defense", "number");
-        reward(stats, "endurance", "minecraft:generic.armor", 0.5, "ADD_VALUE", null, null, "defense", "number");
-        reward(stats, "endurance", "minecraft:generic.armor_toughness", 0.5, "ADD_VALUE", null, null, "defense", "number");
-        reward(stats, "endurance", "minecraft:generic.knockback_resistance", 0.05, "ADD_VALUE", 1.0, null, "defense", "percent");
-        reward(stats, "agility", "minecraft:generic.movement_speed", 0.02, "ADD_MULTIPLIED_BASE", null, null, "mobility", "auto");
-        reward(stats, "agility", "minecraft:generic.attack_speed", 0.5, "ADD_VALUE", null, null, "damage", "number");
-        reward(stats, "agility", "minecraft:generic.step_height", 0.04, "ADD_VALUE", 1.01, null, "mobility", "number");
+        reward(stats, "strength", "minecraft:attack_damage", 0.5, "ADD_VALUE", null, null, "damage", "number");
+        reward(stats, "endurance", "minecraft:max_health", 0.5, "ADD_VALUE", null, null, "defense", "number");
+        reward(stats, "endurance", "minecraft:armor", 0.5, "ADD_VALUE", null, null, "defense", "number");
+        reward(stats, "endurance", "minecraft:armor_toughness", 0.5, "ADD_VALUE", null, null, "defense", "number");
+        reward(stats, "endurance", "minecraft:knockback_resistance", 0.05, "ADD_VALUE", 1.0, null, "defense", "percent");
+        reward(stats, "agility", "minecraft:movement_speed", 0.02, "ADD_MULTIPLIED_BASE", null, null, "mobility", "auto");
+        reward(stats, "agility", "minecraft:attack_speed", 0.5, "ADD_VALUE", null, null, "damage", "number");
+        reward(stats, "agility", "minecraft:step_height", 0.04, "ADD_VALUE", 1.01, null, "mobility", "number");
         reward(stats, "intelligence", "irons_spellbooks:max_mana", 2.0, "ADD_VALUE", 300.0, "irons_spellbooks", "magic", "number");
         reward(stats, "intelligence", "irons_spellbooks:mana_regen", 0.01, "ADD_MULTIPLIED_BASE", 2.0, "irons_spellbooks", "magic", "multiplier");
         reward(stats, "intelligence", "irons_spellbooks:spell_power", 0.01, "ADD_MULTIPLIED_BASE", 2.0, "irons_spellbooks", "magic", "multiplier");
         reward(stats, "intelligence", "irons_spellbooks:cast_time_reduction", 0.005, "ADD_MULTIPLIED_BASE", 1.5, "irons_spellbooks", "magic", "multiplier");
         reward(stats, "intelligence", "irons_spellbooks:cooldown_reduction", 0.005, "ADD_MULTIPLIED_BASE", 1.5, "irons_spellbooks", "magic", "multiplier");
-        reward(stats, "perception", "minecraft:generic.luck", 1.0, "ADD_VALUE", null, null, "utility", "number");
+        reward(stats, "perception", "minecraft:luck", 1.0, "ADD_VALUE", null, null, "utility", "number");
         reward(stats, "perception", "apothic_attributes:crit_chance", 0.002, "ADD_VALUE", 0.20, "apothic_attributes", "damage", "percent");
         reward(stats, "perception", "apothic_attributes:arrow_damage", 0.005, "ADD_MULTIPLIED_BASE", 1.50, "apothic_attributes", "utility", "multiplier");
         reward(stats, "perception", "apothic_attributes:draw_speed", 0.005, "ADD_MULTIPLIED_BASE", 1.50, "apothic_attributes", "utility", "multiplier");
@@ -261,6 +261,14 @@ public final class AttributeRewardsConfig {
         } catch (RuntimeException ignored) {
             return false;
         }
+    }
+
+    static Identifier canonicalAttributeId(Identifier id) {
+        if (!id.getNamespace().equals("minecraft")) return id;
+        String path = id.getPath();
+        if (path.startsWith("generic.")) path = path.substring("generic.".length());
+        else if (path.startsWith("player.")) path = path.substring("player.".length());
+        return Identifier.fromNamespaceAndPath("minecraft", path);
     }
 
     private static void reward(JsonObject stats, String stat, String id, double amount, String operation,

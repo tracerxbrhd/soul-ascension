@@ -18,7 +18,7 @@ Rewards are configured in `config/uapi/soul-ascension/attribute_rewards.json`. E
     "strength": {
       "enabled": true,
       "rewards": {
-        "minecraft:generic.attack_damage": {
+        "minecraft:attack_damage": {
           "enabled": true,
           "amount_per_point": 0.5,
           "operation": "ADD_VALUE",

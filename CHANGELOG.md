@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.0.0-beta.2 - 2026-07-22
+
+- Fixed the NeoForge 26.2 item-registration crash caused by constructing items before their IDs
+  were assigned.
+- Updated vanilla attribute IDs, recipe ingredients and global loot modifiers to their Minecraft
+  26.2 formats while retaining compatibility with beta.1 attribute configuration IDs.
+- Deferred Soul Lens HUD registration until the Minecraft client window is initialized and now
+  requires U-API 3.0.0-beta.2 with lifecycle-safe HUD registration.
+- Isolated development run directories by Minecraft version to prevent older mod sets and worlds
+  from leaking into 26.2 test runs.
+
 ## 3.0.0-beta.1 - 2026-07-22
 
 - Ported Soul Ascension to Minecraft 26.2, NeoForge 26.2.0.28-beta and Java 25.

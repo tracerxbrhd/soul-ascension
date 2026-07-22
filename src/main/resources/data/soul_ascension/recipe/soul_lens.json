@@ -10,10 +10,10 @@
     " B "
   ],
   "key": {
-    "A": { "item": "minecraft:amethyst_shard" },
-    "E": { "item": "minecraft:ender_eye" },
-    "S": { "item": "minecraft:spyglass" },
-    "B": { "item": "soul_ascension:soul_badge" }
+    "A": "minecraft:amethyst_shard",
+    "E": "minecraft:ender_eye",
+    "S": "minecraft:spyglass",
+    "B": "soul_ascension:soul_badge"
   },
   "result": {
     "id": "soul_ascension:soul_lens",

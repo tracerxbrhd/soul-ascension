@@ -26,7 +26,6 @@ public final class SoulAscensionClientEvents {
         @SubscribeEvent public static void registerKeys(RegisterKeyMappingsEvent event) {
             event.registerCategory(CATEGORY);
             event.register(OPEN);
-            SoulLensOverlay.registerHud();
             UApiScreenTabs.register(SoulAscensionMod.id("character"), 100,
                 Component.translatable("button.soul_ascension.character"),
                 SoulAscensionMod.id("textures/gui/icons/character_tab.png"), minecraft -> new CharacterScreen());
@@ -36,6 +35,7 @@ public final class SoulAscensionClientEvents {
     @EventBusSubscriber(modid = SoulAscensionMod.MOD_ID, value = Dist.CLIENT)
     public static final class GameBus {
         @SubscribeEvent public static void tick(ClientTickEvent.Post event) {
+            SoulLensOverlay.registerHud();
             while (OPEN.consumeClick()) Minecraft.getInstance().setScreenAndShow(new CharacterScreen());
         }
 

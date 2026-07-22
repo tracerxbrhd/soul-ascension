@@ -3,11 +3,8 @@ package dev.uapi.soulascension.network;
 import dev.uapi.soulascension.client.CharacterScreen;
 import dev.uapi.soulascension.client.ClientPublicProfileHandler;
 import dev.uapi.soulascension.client.SoulLensOverlay;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
-@OnlyIn(Dist.CLIENT)
 public final class ClientPayloadHandlers {
     private ClientPayloadHandlers() {}
 

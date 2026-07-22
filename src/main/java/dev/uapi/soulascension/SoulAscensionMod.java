@@ -55,28 +55,28 @@ public final class SoulAscensionMod {
         CONDITIONS.register("soul_lens_enabled", () -> SoulLensEnabledCondition.CODEC);
     public static final DeferredHolder<MapCodec<? extends ICondition>, MapCodec<? extends ICondition>> STAT_BOOK_LOOT_ENABLED_CONDITION =
         CONDITIONS.register("stat_book_loot_enabled", () -> StatBookLootEnabledCondition.CODEC);
-    public static final DeferredItem<Item> AMNESIA_SCROLL = ITEMS.register("amnesia_scroll",
-        () -> new AmnesiaScrollItem(new Item.Properties().stacksTo(16)));
-    public static final DeferredItem<Item> SOUL_BADGE = ITEMS.register("soul_badge",
-        () -> new SoulBadgeItem(new Item.Properties().stacksTo(1)));
-    public static final DeferredItem<Item> WITHERED_MEMORY_POTION = ITEMS.register("withered_memory_potion",
-        () -> new WitheredMemoryPotionItem(new Item.Properties().stacksTo(1)));
-    public static final DeferredItem<Item> SOUL_LENS = ITEMS.register("soul_lens",
-        () -> new SoulLensItem(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)));
-    public static final DeferredItem<Item> BLACK_BOOK_STRENGTH = ITEMS.register("black_book_strength",
-        () -> new BlackBookItem(Stat.STRENGTH, new Item.Properties().stacksTo(16).rarity(Rarity.RARE)));
-    public static final DeferredItem<Item> BLACK_BOOK_ENDURANCE = ITEMS.register("black_book_endurance",
-        () -> new BlackBookItem(Stat.ENDURANCE, new Item.Properties().stacksTo(16).rarity(Rarity.RARE)));
-    public static final DeferredItem<Item> BLACK_BOOK_AGILITY = ITEMS.register("black_book_agility",
-        () -> new BlackBookItem(Stat.AGILITY, new Item.Properties().stacksTo(16).rarity(Rarity.RARE)));
-    public static final DeferredItem<Item> BLACK_BOOK_INTELLIGENCE = ITEMS.register("black_book_intelligence",
-        () -> new BlackBookItem(Stat.INTELLIGENCE, new Item.Properties().stacksTo(16).rarity(Rarity.RARE)));
-    public static final DeferredItem<Item> BLACK_BOOK_PERCEPTION = ITEMS.register("black_book_perception",
-        () -> new BlackBookItem(Stat.PERCEPTION, new Item.Properties().stacksTo(16).rarity(Rarity.RARE)));
-    public static final DeferredItem<Item> DEBUG_LEVEL_UP = ITEMS.register("debug_level_up",
-        () -> new DebugProgressItem(DebugProgressItem.Action.LEVEL_UP, new Item.Properties().stacksTo(1)));
-    public static final DeferredItem<Item> DEBUG_ADD_POINT = ITEMS.register("debug_add_point",
-        () -> new DebugProgressItem(DebugProgressItem.Action.ADD_POINT, new Item.Properties().stacksTo(1)));
+    public static final DeferredItem<Item> AMNESIA_SCROLL = ITEMS.registerItem("amnesia_scroll",
+        properties -> new AmnesiaScrollItem(properties.stacksTo(16)));
+    public static final DeferredItem<Item> SOUL_BADGE = ITEMS.registerItem("soul_badge",
+        properties -> new SoulBadgeItem(properties.stacksTo(1)));
+    public static final DeferredItem<Item> WITHERED_MEMORY_POTION = ITEMS.registerItem("withered_memory_potion",
+        properties -> new WitheredMemoryPotionItem(properties.stacksTo(1)));
+    public static final DeferredItem<Item> SOUL_LENS = ITEMS.registerItem("soul_lens",
+        properties -> new SoulLensItem(properties.stacksTo(1).rarity(Rarity.UNCOMMON)));
+    public static final DeferredItem<Item> BLACK_BOOK_STRENGTH = ITEMS.registerItem("black_book_strength",
+        properties -> new BlackBookItem(Stat.STRENGTH, properties.stacksTo(16).rarity(Rarity.RARE)));
+    public static final DeferredItem<Item> BLACK_BOOK_ENDURANCE = ITEMS.registerItem("black_book_endurance",
+        properties -> new BlackBookItem(Stat.ENDURANCE, properties.stacksTo(16).rarity(Rarity.RARE)));
+    public static final DeferredItem<Item> BLACK_BOOK_AGILITY = ITEMS.registerItem("black_book_agility",
+        properties -> new BlackBookItem(Stat.AGILITY, properties.stacksTo(16).rarity(Rarity.RARE)));
+    public static final DeferredItem<Item> BLACK_BOOK_INTELLIGENCE = ITEMS.registerItem("black_book_intelligence",
+        properties -> new BlackBookItem(Stat.INTELLIGENCE, properties.stacksTo(16).rarity(Rarity.RARE)));
+    public static final DeferredItem<Item> BLACK_BOOK_PERCEPTION = ITEMS.registerItem("black_book_perception",
+        properties -> new BlackBookItem(Stat.PERCEPTION, properties.stacksTo(16).rarity(Rarity.RARE)));
+    public static final DeferredItem<Item> DEBUG_LEVEL_UP = ITEMS.registerItem("debug_level_up",
+        properties -> new DebugProgressItem(DebugProgressItem.Action.LEVEL_UP, properties.stacksTo(1)));
+    public static final DeferredItem<Item> DEBUG_ADD_POINT = ITEMS.registerItem("debug_add_point",
+        properties -> new DebugProgressItem(DebugProgressItem.Action.ADD_POINT, properties.stacksTo(1)));
     public static final UApiCreativeTabs.Registrar CREATIVE_TAB = UApiCreativeTabs.create(
         MOD_ID, "main", "itemGroup.soul_ascension", () -> AMNESIA_SCROLL.get().getDefaultInstance());
 

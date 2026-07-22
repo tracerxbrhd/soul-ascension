@@ -2,6 +2,7 @@ package dev.uapi.soulascension.config;
 
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -9,6 +10,16 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EpicFightNativeRewardsTest {
+    @Test
+    void normalizesLegacyMinecraftAttributeIdsOnly() {
+        assertEquals(Identifier.parse("minecraft:attack_damage"),
+            AttributeRewardsConfig.canonicalAttributeId(Identifier.parse("minecraft:generic.attack_damage")));
+        assertEquals(Identifier.parse("minecraft:mining_efficiency"),
+            AttributeRewardsConfig.canonicalAttributeId(Identifier.parse("minecraft:player.mining_efficiency")));
+        assertEquals(Identifier.parse("example:generic.attack_damage"),
+            AttributeRewardsConfig.canonicalAttributeId(Identifier.parse("example:generic.attack_damage")));
+    }
+
     @Test
     void requiresCleanVersionTwoConfig() {
         JsonObject root = new JsonObject();

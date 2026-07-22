@@ -110,13 +110,13 @@ public final class DynamicAttributeView {
         registerCategory(MAGIC, 400);
         registerCategory(OTHER, 1000);
 
-        rules(DAMAGE, "minecraft:generic.attack_damage", "minecraft:generic.attack_speed",
-            "minecraft:generic.attack_knockback");
-        rules(DEFENSE, "minecraft:generic.max_health", "minecraft:generic.armor",
-            "minecraft:generic.armor_toughness", "minecraft:generic.knockback_resistance",
-            "minecraft:generic.explosion_knockback_resistance");
-        rules(MOBILITY, "minecraft:generic.movement_speed", "minecraft:generic.step_height");
-        rules(UTILITY, "minecraft:generic.luck", "minecraft:generic.oxygen_bonus");
+        rules(DAMAGE, "minecraft:attack_damage", "minecraft:attack_speed",
+            "minecraft:attack_knockback");
+        rules(DEFENSE, "minecraft:max_health", "minecraft:armor",
+            "minecraft:armor_toughness", "minecraft:knockback_resistance",
+            "minecraft:explosion_knockback_resistance");
+        rules(MOBILITY, "minecraft:movement_speed", "minecraft:step_height");
+        rules(UTILITY, "minecraft:luck", "minecraft:oxygen_bonus");
 
         optionalRules("apothic_attributes", DAMAGE, "apothic_attributes:armor_pierce", "apothic_attributes:armor_shred",
             "apothic_attributes:crit_chance", "apothic_attributes:crit_damage",

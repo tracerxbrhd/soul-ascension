@@ -7,11 +7,11 @@
     "   "
   ],
   "key": {
-    "#": { "item": "minecraft:paper" },
-    "F": { "item": "minecraft:feather" },
-    "G": { "item": "minecraft:glow_ink_sac" },
-    "o": { "item": "minecraft:amethyst_shard" },
-    "=": { "item": "minecraft:iron_ingot" }
+    "#": "minecraft:paper",
+    "F": "minecraft:feather",
+    "G": "minecraft:glow_ink_sac",
+    "o": "minecraft:amethyst_shard",
+    "=": "minecraft:iron_ingot"
   },
   "result": {
     "id": "soul_ascension:soul_badge",
