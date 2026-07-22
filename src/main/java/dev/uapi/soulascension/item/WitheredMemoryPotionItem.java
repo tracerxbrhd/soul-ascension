@@ -2,13 +2,13 @@ package dev.uapi.soulascension.item;
 
 import dev.uapi.soulascension.progression.SoulAscensionService;
 import net.minecraft.ChatFormatting;
-import net.minecraft.advancements.CriteriaTriggers;
+import net.minecraft.advancements.triggers.CriteriaTriggers;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
@@ -18,11 +18,12 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ItemUtils;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.UseAnim;
+import net.minecraft.world.item.component.TooltipDisplay;
+import net.minecraft.world.item.ItemUseAnimation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 /** Standalone drink item: deliberately not a vanilla Potion, so no splash/lingering/arrow variants exist. */
 public final class WitheredMemoryPotionItem extends Item {
@@ -43,7 +44,7 @@ public final class WitheredMemoryPotionItem extends Item {
     }
 
     @Override
-    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+    public InteractionResult use(Level level, Player player, InteractionHand hand) {
         return ItemUtils.startUsingInstantly(level, player, hand);
     }
 
@@ -53,18 +54,18 @@ public final class WitheredMemoryPotionItem extends Item {
     }
 
     @Override
-    public UseAnim getUseAnimation(ItemStack stack) {
-        return UseAnim.DRINK;
+    public ItemUseAnimation getUseAnimation(ItemStack stack) {
+        return ItemUseAnimation.DRINK;
     }
 
     @Override
     public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity livingEntity) {
         level.playSound(null, livingEntity.getX(), livingEntity.getY(), livingEntity.getZ(),
-            SoundEvents.GENERIC_DRINK, SoundSource.NEUTRAL, 0.5F, level.random.nextFloat() * 0.1F + 0.9F);
+            SoundEvents.GENERIC_DRINK, SoundSource.NEUTRAL, 0.5F, level.getRandom().nextFloat() * 0.1F + 0.9F);
         livingEntity.gameEvent(GameEvent.DRINK);
         if (!level.isClientSide()) {
             livingEntity.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, LONG_EFFECT_DURATION_TICKS, 0));
-            livingEntity.addEffect(new MobEffectInstance(MobEffects.CONFUSION, LONG_EFFECT_DURATION_TICKS, 0));
+            livingEntity.addEffect(new MobEffectInstance(MobEffects.NAUSEA, LONG_EFFECT_DURATION_TICKS, 0));
             livingEntity.addEffect(new MobEffectInstance(MobEffects.POISON, STRONG_EFFECT_DURATION_TICKS, 1));
             livingEntity.addEffect(new MobEffectInstance(MobEffects.WITHER, STRONG_EFFECT_DURATION_TICKS, 1));
             if (livingEntity instanceof ServerPlayer player) {
@@ -79,17 +80,17 @@ public final class WitheredMemoryPotionItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("tooltip.soul_ascension.withered_memory_potion.weakness")
+    public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display, Consumer<Component> tooltip, TooltipFlag flag) {
+        tooltip.accept(Component.translatable("tooltip.soul_ascension.withered_memory_potion.weakness")
             .withStyle(ChatFormatting.RED));
-        tooltip.add(Component.translatable("tooltip.soul_ascension.withered_memory_potion.nausea")
+        tooltip.accept(Component.translatable("tooltip.soul_ascension.withered_memory_potion.nausea")
             .withStyle(ChatFormatting.RED));
-        tooltip.add(Component.translatable("tooltip.soul_ascension.withered_memory_potion.poison")
+        tooltip.accept(Component.translatable("tooltip.soul_ascension.withered_memory_potion.poison")
             .withStyle(ChatFormatting.DARK_GREEN));
-        tooltip.add(Component.translatable("tooltip.soul_ascension.withered_memory_potion.wither")
+        tooltip.accept(Component.translatable("tooltip.soul_ascension.withered_memory_potion.wither")
             .withStyle(ChatFormatting.DARK_RED));
-        tooltip.add(Component.empty());
-        tooltip.add(Component.translatable("tooltip.soul_ascension.withered_memory_potion")
+        tooltip.accept(Component.empty());
+        tooltip.accept(Component.translatable("tooltip.soul_ascension.withered_memory_potion")
             .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC));
     }
 }

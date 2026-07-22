@@ -9,7 +9,7 @@ import dev.uapi.integration.IntegrationService;
 import dev.uapi.soulascension.data.Stat;
 import dev.uapi.soulascension.progression.AttributeService;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.neoforged.fml.loading.FMLPaths;
 
@@ -64,7 +64,7 @@ public final class AttributeRewardsConfig {
             if (!element.isJsonObject()) throw new IllegalArgumentException("root must be an object");
             JsonObject root = element.getAsJsonObject();
             if (!currentFormat(root)) {
-                LOGGER.error("Ignoring unsupported {}. Soul Ascension 2.0 requires a clean format_version={} file",
+                LOGGER.error("Ignoring unsupported {}. This Soul Ascension version requires a clean format_version={} file",
                     target, FORMAT_VERSION);
                 snapshot = parse(defaultRoot(), true);
                 return;
@@ -187,13 +187,13 @@ public final class AttributeRewardsConfig {
                     if (!entry.getValue().isJsonObject()) throw new IllegalArgumentException("reward must be an object");
                     JsonObject value = entry.getValue().getAsJsonObject();
                     if (!bool(value, "enabled", true)) continue;
-                    ResourceLocation attributeId = ResourceLocation.parse(entry.getKey());
+                    Identifier attributeId = Identifier.parse(entry.getKey());
                     String requiredMod = nullableString(value, "required_mod");
                     if (requiredMod != null && !requiredMod.matches("[a-z][a-z0-9_]{1,63}"))
                         throw new IllegalArgumentException("invalid required_mod");
                     if (requiredMod != null && !IntegrationService.isLoaded(requiredMod)) continue;
                     if (!nativeRewardEnabled(root, value)) continue;
-                    if (BuiltInRegistries.ATTRIBUTE.getHolder(attributeId).isEmpty())
+                    if (BuiltInRegistries.ATTRIBUTE.get(attributeId).isEmpty())
                         throw new IllegalArgumentException("unknown attribute id");
                     double amount = finite(value, "amount_per_point", 0.0);
                     AttributeModifier.Operation operation = AttributeModifier.Operation.valueOf(

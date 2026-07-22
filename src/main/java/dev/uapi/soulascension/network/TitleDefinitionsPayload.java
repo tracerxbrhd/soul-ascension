@@ -4,14 +4,14 @@ import dev.uapi.soulascension.SoulAscensionMod;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public record TitleDefinitionsPayload(List<ClientTitleDefinition> titles) implements CustomPacketPayload {
     public static final Type<TitleDefinitionsPayload> TYPE = new Type<>(
-        ResourceLocation.fromNamespaceAndPath(SoulAscensionMod.MOD_ID, "title_definitions"));
+        Identifier.fromNamespaceAndPath(SoulAscensionMod.MOD_ID, "title_definitions"));
     public static final StreamCodec<RegistryFriendlyByteBuf, TitleDefinitionsPayload> STREAM_CODEC = new StreamCodec<>() {
         @Override public TitleDefinitionsPayload decode(RegistryFriendlyByteBuf buffer) {
             int size = buffer.readVarInt();

@@ -1,5 +1,9 @@
 # SOUL ASCENSION: config-driven attribute rewards
 
+> Minecraft 26.2 status: Epic Fight does not currently provide a compatible API artifact. Its
+> generated rules remain dormant configuration data; Soul Ascension 3.0 does not link to or
+> synchronize Epic Fight attributes. See [`EPIC_FIGHT_INTEGRATION.md`](EPIC_FIGHT_INTEGRATION.md).
+
 Rewards are configured in `config/uapi/soul-ascension/attribute_rewards.json`. Each stat owns a `rewards` object keyed by the real attribute registry ID:
 
 ```json
@@ -40,9 +44,9 @@ Rewards are configured in `config/uapi/soul-ascension/attribute_rewards.json`. E
 
 Supported operations are `ADD_VALUE`, `ADD_MULTIPLIED_BASE` and `ADD_MULTIPLIED_TOTAL`. Formatters are `auto`, `number`, `percent` and `multiplier`. `required_mod` keeps optional integration attributes from becoming hard dependencies.
 
-If the JSON file does not exist, a valid 2.0 default file is generated. A file without
+If the JSON file does not exist, a valid format-version-2 default file is generated. A file without
 `"format_version": 2` is unsupported, remains untouched and is ignored at runtime; generate a clean
-2.0 file instead. Invalid IDs, operations and values in a current file are logged and skipped; they
+3.0 file instead. Invalid IDs, operations and values in a current file are logged and skipped; they
 do not stop the game. Malformed current-format JSON is moved to
 `attribute_rewards.json.broken.<timestamp>.bak`, then a valid default file is generated.
 
@@ -50,8 +54,8 @@ Modifiers use stable `soul_ascension:stat_<stat>_<index>` IDs and are replaced d
 
 ## Native Epic Fight rewards
 
-The freshly generated Soul Ascension 2.0 file includes these native rules in the normal reward
-tree. They stay dormant while Epic Fight is absent because every rule requires the `epicfight` mod:
+The freshly generated Soul Ascension 3.0 file retains these legacy native rules in the normal reward
+tree. They remain dormant on Minecraft 26.2 even if an incompatible Epic Fight build is present:
 
 | Soul stat | Epic Fight attribute | Amount per point | Operation | Final-value cap |
 | --- | --- | ---: | --- | ---: |

@@ -32,7 +32,7 @@ public final class SoulLensService {
         Integer previous = LAST_REQUEST_TICK.put(viewer.getUUID(), now);
         if (previous != null && now - previous < Math.max(1, interval - 1)) return;
 
-        ServerPlayer target = viewer.server.getPlayerList().getPlayer(targetId);
+        ServerPlayer target = viewer.level().getServer().getPlayerList().getPlayer(targetId);
         double range = config.soulLensRange();
         if (target == null || target == viewer || viewer.distanceToSqr(target) > range * range
             || config.soulLensRequireLineOfSight() && !viewer.hasLineOfSight(target)) {

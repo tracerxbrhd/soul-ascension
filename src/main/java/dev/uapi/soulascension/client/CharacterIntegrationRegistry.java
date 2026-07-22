@@ -4,7 +4,7 @@ import dev.uapi.soulascension.SoulAscensionMod;
 import dev.uapi.integration.IntegrationService;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -16,9 +16,9 @@ import java.util.function.Function;
 
 /** Client API: optional compatibility mods may replace or add character-screen tabs. */
 public final class CharacterIntegrationRegistry {
-    public record Tab(ResourceLocation id, ResourceLocation icon, Component title, int order,
+    public record Tab(Identifier id, Identifier icon, Component title, int order,
                       BooleanSupplier visible, Function<LocalPlayer, List<Component>> lines) {}
-    private static final Map<ResourceLocation, Tab> TABS = new LinkedHashMap<>();
+    private static final Map<Identifier, Tab> TABS = new LinkedHashMap<>();
     private static boolean defaultsRegistered;
     private CharacterIntegrationRegistry() {}
 
@@ -33,12 +33,12 @@ public final class CharacterIntegrationRegistry {
     private static void bootstrapDefaults() {
         if (defaultsRegistered) return;
         defaultsRegistered = true;
-        ResourceLocation originsIcon = SoulAscensionMod.id("textures/gui/icons/origins.png");
+        Identifier originsIcon = SoulAscensionMod.id("textures/gui/icons/origins.png");
         registerDefault(new Tab(SoulAscensionMod.id("origins"), originsIcon, Component.translatable("integration.soul_ascension.origins"), 100,
             () -> loadedAny("origins", "origins_neoforge", "neoorigins"), player -> {
                 List<Component> lines = new ArrayList<>();
                 lines.add(Component.translatable("integration.soul_ascension.detected"));
-                player.getTags().stream().filter(tag -> tag.contains("origin")).sorted()
+                player.entityTags().stream().filter(tag -> tag.contains("origin")).sorted()
                     .forEach(tag -> lines.add(Component.literal(tag)));
                 if (lines.size() == 1) lines.add(Component.translatable("integration.soul_ascension.provider_hint"));
                 return lines;

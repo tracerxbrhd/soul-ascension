@@ -7,10 +7,11 @@ import dev.uapi.soulascension.data.Stat;
 import dev.uapi.soulascension.progression.AttributeService;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.I18n;
+import net.minecraft.locale.Language;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -31,11 +32,11 @@ import java.util.Optional;
 public final class AttributeViewModel {
     public enum SourceKind { SOUL_ASCENSION, EQUIPMENT, EFFECT, OTHER_MOD, UNKNOWN }
 
-    public record SourceEntry(SourceKind kind, Component name, ResourceLocation modifierId,
+    public record SourceEntry(SourceKind kind, Component name, Identifier modifierId,
                               ItemStack icon, double amount, AttributeModifier.Operation operation,
                               Component formattedAmount) {}
 
-    public record DisplayEntry(ResourceLocation id, Holder<Attribute> attribute, Component name,
+    public record DisplayEntry(Identifier id, Holder<Attribute> attribute, Component name,
                                Component description, AttributeDisplayRegistry.Category category,
                                double baseValue, double currentValue, double previewValue,
                                Component formattedBase, Component formattedCurrent,
@@ -48,22 +49,22 @@ public final class AttributeViewModel {
         public Group { entries = List.copyOf(entries); }
     }
 
-    private record ModifierKey(ResourceLocation attributeId, ResourceLocation modifierId) {}
+    private record ModifierKey(Identifier attributeId, Identifier modifierId) {}
     private record EquipmentSource(ItemStack stack, EquipmentSlot slot) {}
 
     private List<Group> groups = List.of();
-    private Map<ResourceLocation, DisplayEntry> byId = Map.of();
-    private static final Map<ResourceLocation, Component> DESCRIPTION_CACHE = new HashMap<>();
-    private ResourceLocation selectedId;
+    private Map<Identifier, DisplayEntry> byId = Map.of();
+    private static final Map<Identifier, Component> DESCRIPTION_CACHE = new HashMap<>();
+    private Identifier selectedId;
     private long lastFingerprint = Long.MIN_VALUE;
     private int ticksSinceRefresh = 10;
     private boolean dirty = true;
 
     public List<Group> groups() { return groups; }
     public Optional<DisplayEntry> selected() { return Optional.ofNullable(byId.get(selectedId)); }
-    public ResourceLocation selectedId() { return selectedId; }
+    public Identifier selectedId() { return selectedId; }
 
-    public void select(ResourceLocation id) {
+    public void select(Identifier id) {
         if (byId.containsKey(id)) selectedId = id;
     }
 
@@ -82,12 +83,12 @@ public final class AttributeViewModel {
         Map<ModifierKey, EquipmentSource> equipment = equipmentSources(player);
         Map<ModifierKey, Component> effects = effectSources(player);
         List<Group> rebuiltGroups = new ArrayList<>();
-        Map<ResourceLocation, DisplayEntry> rebuiltById = new HashMap<>();
+        Map<Identifier, DisplayEntry> rebuiltById = new HashMap<>();
 
         for (DynamicAttributeView.Group group : DynamicAttributeView.collect(player)) {
             List<DisplayEntry> entries = new ArrayList<>();
             for (DynamicAttributeView.Value value : group.values()) {
-                Holder<Attribute> holder = BuiltInRegistries.ATTRIBUTE.getHolder(value.id()).orElse(null);
+                Holder<Attribute> holder = BuiltInRegistries.ATTRIBUTE.get(value.id()).orElse(null);
                 if (holder == null) continue;
                 AttributeInstance instance = player.getAttribute(holder);
                 if (instance == null) continue;
@@ -114,7 +115,7 @@ public final class AttributeViewModel {
         dirty = false;
     }
 
-    private static List<SourceEntry> collectSources(ResourceLocation attributeId, Holder<Attribute> holder,
+    private static List<SourceEntry> collectSources(Identifier attributeId, Holder<Attribute> holder,
                                                      AttributeInstance instance,
                                                      Map<ModifierKey, EquipmentSource> equipment,
                                                      Map<ModifierKey, Component> effects) {
@@ -139,7 +140,7 @@ public final class AttributeViewModel {
             } else if (effect != null) {
                 kind = SourceKind.EFFECT;
                 name = Component.translatable("screen.soul_ascension.source.effect", effect);
-            } else if (!modifier.id().getNamespace().equals(ResourceLocation.DEFAULT_NAMESPACE)
+            } else if (!modifier.id().getNamespace().equals(Identifier.DEFAULT_NAMESPACE)
                 && !modifier.id().getNamespace().equals(SoulAscensionMod.MOD_ID)) {
                 kind = SourceKind.OTHER_MOD;
                 String displayName = ModList.get().getModContainerById(modifier.id().getNamespace())
@@ -163,7 +164,7 @@ public final class AttributeViewModel {
             ItemStack stack = player.getItemBySlot(slot);
             if (stack.isEmpty()) continue;
             stack.forEachModifier(slot, (attribute, modifier) -> attribute.unwrapKey().ifPresent(key ->
-                result.put(new ModifierKey(key.location(), modifier.id()), new EquipmentSource(stack, slot))));
+                result.put(new ModifierKey(key.identifier(), modifier.id()), new EquipmentSource(stack, slot))));
         }
         return result;
     }
@@ -173,37 +174,37 @@ public final class AttributeViewModel {
         for (MobEffectInstance instance : player.getActiveEffects()) {
             Component name = Component.translatable(instance.getEffect().value().getDescriptionId());
             instance.getEffect().value().createModifiers(instance.getAmplifier(), (attribute, modifier) ->
-                attribute.unwrapKey().ifPresent(key -> result.put(new ModifierKey(key.location(), modifier.id()), name)));
+                attribute.unwrapKey().ifPresent(key -> result.put(new ModifierKey(key.identifier(), modifier.id()), name)));
         }
         return result;
     }
 
     private static long fingerprint(net.minecraft.client.player.LocalPlayer player, PlayerProgress progress) {
         long value = progress.hashCode();
-        var attributes = BuiltInRegistries.ATTRIBUTE.holders().iterator();
+        var attributes = BuiltInRegistries.ATTRIBUTE.listElements().iterator();
         while (attributes.hasNext()) {
             Holder<Attribute> holder = attributes.next();
             AttributeInstance instance = player.getAttribute(holder);
             if (instance == null) continue;
-            value = value * 31L + holder.unwrapKey().map(key -> key.location().hashCode()).orElse(0);
+            value = value * 31L + holder.unwrapKey().map(key -> key.identifier().hashCode()).orElse(0);
             value = value * 31L + Double.doubleToLongBits(instance.getValue());
         }
         for (EquipmentSlot slot : EquipmentSlot.values())
             value = value * 31L + ItemStack.hashItemAndComponents(player.getItemBySlot(slot));
         for (MobEffectInstance effect : player.getActiveEffects()) {
-            ResourceLocation id = effect.getEffect().unwrapKey().map(key -> key.location())
-                .orElse(ResourceLocation.fromNamespaceAndPath("minecraft", "unknown"));
+            Identifier id = effect.getEffect().unwrapKey().map(key -> key.identifier())
+                .orElse(Identifier.fromNamespaceAndPath("minecraft", "unknown"));
             value = value * 31L + id.hashCode();
             value = value * 31L + effect.getAmplifier();
         }
         return value;
     }
 
-    private static Component description(ResourceLocation id) {
+    private static Component description(Identifier id) {
         return DESCRIPTION_CACHE.computeIfAbsent(id, keyId -> {
             String key = "attribute_description.soul_ascension." + keyId.getNamespace() + "."
                 + keyId.getPath().replace('/', '.');
-            return I18n.exists(key) ? Component.translatable(key)
+            return Language.getInstance().has(key) ? Component.translatable(key)
                 : Component.translatable("screen.soul_ascension.attribute.no_description");
         });
     }
@@ -217,6 +218,7 @@ public final class AttributeViewModel {
             case CHEST -> "chest";
             case HEAD -> "head";
             case BODY -> "body";
+            case SADDLE -> "saddle";
         };
     }
 }

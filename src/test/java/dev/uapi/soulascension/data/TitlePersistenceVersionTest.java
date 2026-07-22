@@ -2,7 +2,7 @@ package dev.uapi.soulascension.data;
 
 import com.mojang.serialization.JsonOps;
 import com.google.gson.JsonParser;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -15,7 +15,7 @@ final class TitlePersistenceVersionTest {
             .getOrThrow();
         var titleCountersJson = TitleCounters.CODEC.encodeStart(JsonOps.INSTANCE, TitleCounters.initial())
             .getOrThrow();
-        ActiveTitleData active = ActiveTitleData.of(ResourceLocation.parse("soul_ascension:none"));
+        ActiveTitleData active = ActiveTitleData.of(Identifier.parse("soul_ascension:none"));
         var activeTitleJson = ActiveTitleData.CODEC.encodeStart(JsonOps.INSTANCE, active).getOrThrow();
 
         assertEquals(TitleProgress.DATA_VERSION,

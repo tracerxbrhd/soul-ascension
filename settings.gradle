@@ -7,10 +7,17 @@ pluginManagement {
 }
 
 plugins {
-    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
 
 rootProject.name = 'soul-ascension'
+
+// During local development Soul Ascension can consume the sibling U-API checkout directly.
+// Override or remove u_api_local_path to resolve the published Maven coordinate instead.
+def uApiLocalPath = providers.gradleProperty('u_api_local_path').orNull
+if (uApiLocalPath && file(uApiLocalPath).isDirectory()) {
+    includeBuild(uApiLocalPath)
+}
 
 def localUApiBuild = file('u-api')
 def siblingUApiBuild = file('../u-api')

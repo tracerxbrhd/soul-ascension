@@ -4,7 +4,7 @@ import dev.uapi.soulascension.SoulAscensionMod;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.UUID;
 import java.util.Objects;
@@ -15,7 +15,7 @@ public record SoulLensProfilePayload(UUID targetId, long observationId, int stat
     public static final int OUT_OF_RANGE = 1;
     public static final int PRIVATE = 2;
     public static final Type<SoulLensProfilePayload> TYPE = new Type<>(
-        ResourceLocation.fromNamespaceAndPath(SoulAscensionMod.MOD_ID, "soul_lens_profile"));
+        Identifier.fromNamespaceAndPath(SoulAscensionMod.MOD_ID, "soul_lens_profile"));
     public static final StreamCodec<RegistryFriendlyByteBuf, SoulLensProfilePayload> STREAM_CODEC = new StreamCodec<>() {
         @Override public SoulLensProfilePayload decode(RegistryFriendlyByteBuf buffer) {
             UUID id = buffer.readUUID();

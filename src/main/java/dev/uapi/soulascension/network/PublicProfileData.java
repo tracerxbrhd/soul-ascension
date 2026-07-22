@@ -4,7 +4,7 @@ import dev.uapi.api.profile.ProfileFacet;
 import dev.uapi.api.profile.ProfileFacetRegistry;
 import dev.uapi.api.profile.ProfileFacetWireCodec;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -15,7 +15,7 @@ import java.util.UUID;
 
 /** Deliberately limited DTO: no free points, progress, modifier sources, or configuration data. */
 public record PublicProfileData(UUID playerId, String playerName, String skinValue, String skinSignature,
-                                int level, ResourceLocation activeTitle,
+                                int level, Identifier activeTitle,
                                 int strength, int endurance, int agility, int intelligence, int perception,
                                 List<PublicAttribute> attributes, List<ProfileFacet> facets) {
     private static final int MAX_NAME_LENGTH = 64;
@@ -23,7 +23,7 @@ public record PublicProfileData(UUID playerId, String playerName, String skinVal
     private static final int MAX_SKIN_SIGNATURE_LENGTH = 2048;
     private static final int MAX_ATTRIBUTES = 32;
 
-    public record PublicAttribute(ResourceLocation id, double value) {
+    public record PublicAttribute(Identifier id, double value) {
         public PublicAttribute {
             Objects.requireNonNull(id, "id");
             if (!Double.isFinite(value)) throw new IllegalArgumentException("Non-finite public attribute value");
@@ -39,7 +39,7 @@ public record PublicProfileData(UUID playerId, String playerName, String skinVal
         Objects.requireNonNull(activeTitle, "activeTitle");
         attributes = List.copyOf(Objects.requireNonNull(attributes, "attributes"));
         if (attributes.size() > MAX_ATTRIBUTES) throw new IllegalArgumentException("Too many public attributes");
-        Set<ResourceLocation> attributeIds = new HashSet<>();
+        Set<Identifier> attributeIds = new HashSet<>();
         for (PublicAttribute attribute : attributes) {
             Objects.requireNonNull(attribute, "attributes must not contain null");
             if (!attributeIds.add(attribute.id()))
@@ -51,7 +51,7 @@ public record PublicProfileData(UUID playerId, String playerName, String skinVal
     }
 
     public PublicProfileData(UUID playerId, String playerName, String skinValue, String skinSignature,
-                             int level, ResourceLocation activeTitle, int strength, int endurance,
+                             int level, Identifier activeTitle, int strength, int endurance,
                              int agility, int intelligence, int perception, List<PublicAttribute> attributes) {
         this(playerId, playerName, skinValue, skinSignature, level, activeTitle, strength, endurance,
             agility, intelligence, perception, attributes, List.of());
@@ -63,7 +63,7 @@ public record PublicProfileData(UUID playerId, String playerName, String skinVal
         String skinValue = buffer.readUtf(MAX_SKIN_VALUE_LENGTH);
         String skinSignature = buffer.readUtf(MAX_SKIN_SIGNATURE_LENGTH);
         int level = buffer.readVarInt();
-        ResourceLocation activeTitle = buffer.readResourceLocation();
+        Identifier activeTitle = buffer.readIdentifier();
         int strength = buffer.readVarInt();
         int endurance = buffer.readVarInt();
         int agility = buffer.readVarInt();
@@ -73,7 +73,7 @@ public record PublicProfileData(UUID playerId, String playerName, String skinVal
         if (size < 0 || size > MAX_ATTRIBUTES) throw new IllegalArgumentException("Invalid public attribute count: " + size);
         List<PublicAttribute> attributes = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
-            attributes.add(new PublicAttribute(buffer.readResourceLocation(), buffer.readDouble()));
+            attributes.add(new PublicAttribute(buffer.readIdentifier(), buffer.readDouble()));
         }
         List<ProfileFacet> facets = ProfileFacetWireCodec.decodeList(buffer);
         return new PublicProfileData(playerId, playerName, skinValue, skinSignature, level, activeTitle, strength,
@@ -86,7 +86,7 @@ public record PublicProfileData(UUID playerId, String playerName, String skinVal
         buffer.writeUtf(skinValue, MAX_SKIN_VALUE_LENGTH);
         buffer.writeUtf(skinSignature, MAX_SKIN_SIGNATURE_LENGTH);
         buffer.writeVarInt(level);
-        buffer.writeResourceLocation(activeTitle);
+        buffer.writeIdentifier(activeTitle);
         buffer.writeVarInt(strength);
         buffer.writeVarInt(endurance);
         buffer.writeVarInt(agility);
@@ -94,7 +94,7 @@ public record PublicProfileData(UUID playerId, String playerName, String skinVal
         buffer.writeVarInt(perception);
         buffer.writeVarInt(attributes.size());
         for (PublicAttribute attribute : attributes) {
-            buffer.writeResourceLocation(attribute.id());
+            buffer.writeIdentifier(attribute.id());
             buffer.writeDouble(attribute.value());
         }
         ProfileFacetWireCodec.encodeList(buffer, facets);

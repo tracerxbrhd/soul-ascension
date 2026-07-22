@@ -1,17 +1,19 @@
 package dev.uapi.soulascension.client;
 
 import dev.uapi.soulascension.SoulAscensionMod;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.input.InputWithModifiers;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /** Resource-pack-friendly text button shared by Soul Ascension screens. */
 public final class SoulTextButton extends AbstractButton {
-    private static final ResourceLocation NORMAL = SoulAscensionMod.id("character/tab_normal");
-    private static final ResourceLocation HOVERED = SoulAscensionMod.id("character/tab_hovered");
-    private static final ResourceLocation DISABLED = SoulAscensionMod.id("character/tab_disabled");
+    private static final Identifier NORMAL = SoulAscensionMod.id("character/tab_normal");
+    private static final Identifier HOVERED = SoulAscensionMod.id("character/tab_hovered");
+    private static final Identifier DISABLED = SoulAscensionMod.id("character/tab_disabled");
     private final Runnable action;
 
     public SoulTextButton(int x, int y, int width, int height, Component message, Runnable action) {
@@ -19,17 +21,17 @@ public final class SoulTextButton extends AbstractButton {
         this.action = action;
     }
 
-    @Override public void onPress() {
+    @Override public void onPress(InputWithModifiers input) {
         setFocused(false);
         action.run();
     }
 
     @Override
-    protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        ResourceLocation sprite = !active ? DISABLED : isMouseOver(mouseX, mouseY) ? HOVERED : NORMAL;
-        graphics.blitSprite(sprite, getX(), getY(), getWidth(), getHeight());
+    protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        Identifier sprite = !active ? DISABLED : isMouseOver(mouseX, mouseY) ? HOVERED : NORMAL;
+        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, getX(), getY(), getWidth(), getHeight());
         int color = active ? isMouseOver(mouseX, mouseY) ? 0xFFFFFFFF : 0xFFF1E9FF : 0xFF716879;
-        graphics.drawCenteredString(net.minecraft.client.Minecraft.getInstance().font, getMessage(),
+        graphics.centeredText(net.minecraft.client.Minecraft.getInstance().font, getMessage(),
             getX() + getWidth() / 2, getY() + (getHeight() - 8) / 2, color);
     }
 

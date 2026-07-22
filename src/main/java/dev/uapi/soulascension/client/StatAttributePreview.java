@@ -7,7 +7,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.item.TooltipFlag;
@@ -25,13 +25,13 @@ public final class StatAttributePreview {
     private StatAttributePreview() {}
 
     /** Computes the effective value with all pending stat modifiers replaced locally. */
-    public static double value(LocalPlayer player, PlayerProgress preview, ResourceLocation attributeId,
+    public static double value(LocalPlayer player, PlayerProgress preview, Identifier attributeId,
                                AttributeInstance instance) {
         List<AttributeService.ModifierReplacement> replacements = new ArrayList<>();
         for (Stat stat : Stat.values()) {
             for (AttributeService.ConfiguredModifier definition : AttributeService.definitions(stat)) {
                 if (!definition.attributeId().equals(attributeId)) continue;
-                ResourceLocation modifierId = AttributeService.modifierId(stat, definition.index());
+                Identifier modifierId = AttributeService.modifierId(stat, definition.index());
                 double amount = AttributeService.effectiveAmount(instance, modifierId, definition,
                     Math.max(0, preview.stat(stat)));
                 replacements.add(new AttributeService.ModifierReplacement(modifierId, amount, definition.operation()));
@@ -42,13 +42,13 @@ public final class StatAttributePreview {
     }
 
     public static List<Change> change(LocalPlayer player, PlayerProgress progress, Stat stat, int delta) {
-        Map<ResourceLocation, List<AttributeService.ConfiguredModifier>> grouped = new LinkedHashMap<>();
+        Map<Identifier, List<AttributeService.ConfiguredModifier>> grouped = new LinkedHashMap<>();
         for (AttributeService.ConfiguredModifier definition : AttributeService.definitions(stat))
             grouped.computeIfAbsent(definition.attributeId(), ignored -> new ArrayList<>()).add(definition);
 
         List<Change> result = new ArrayList<>();
-        for (Map.Entry<ResourceLocation, List<AttributeService.ConfiguredModifier>> entry : grouped.entrySet()) {
-            Holder<Attribute> holder = BuiltInRegistries.ATTRIBUTE.getHolder(entry.getKey()).orElse(null);
+        for (Map.Entry<Identifier, List<AttributeService.ConfiguredModifier>> entry : grouped.entrySet()) {
+            Holder<Attribute> holder = BuiltInRegistries.ATTRIBUTE.get(entry.getKey()).orElse(null);
             if (holder == null) continue;
             AttributeInstance instance = player.getAttribute(holder);
             // Optional attributes may not have a client-side instance until their first

@@ -9,7 +9,7 @@ import dev.uapi.soulascension.progression.SoulAscensionService;
 import dev.uapi.soulascension.network.ClientTitleDefinition;
 import dev.uapi.soulascension.network.TitleDefinitionsPayload;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -43,7 +43,7 @@ public final class TitleService {
                 updated = updated.activeTitle(TitleProgress.NONE);
         }
         if (!updated.equals(original)) player.setData(SoulAscensionAttachments.TITLES, updated);
-        ResourceLocation displayed = dev.uapi.soulascension.config.SoulAscensionConfigManager.current().showTitlesInNameplate()
+        Identifier displayed = dev.uapi.soulascension.config.SoulAscensionConfigManager.current().showTitlesInNameplate()
             ? updated.activeTitle() : TitleProgress.NONE;
         if (!player.getData(SoulAscensionAttachments.ACTIVE_TITLE).titleId().equals(displayed))
             player.setData(SoulAscensionAttachments.ACTIVE_TITLE, ActiveTitleData.of(displayed));
@@ -53,7 +53,7 @@ public final class TitleService {
         return unlockedNow.size();
     }
 
-    public static boolean select(ServerPlayer player, ResourceLocation id) {
+    public static boolean select(ServerPlayer player, Identifier id) {
         TitleProgress old = get(player);
         if (!id.equals(TitleProgress.NONE)) {
             TitleDefinition definition = TitleRegistry.get(id).orElse(null);
@@ -68,7 +68,7 @@ public final class TitleService {
         return true;
     }
 
-    public static boolean forceUnlock(ServerPlayer player, ResourceLocation id) {
+    public static boolean forceUnlock(ServerPlayer player, Identifier id) {
         TitleDefinition definition = TitleRegistry.get(id).orElse(null);
         if (definition == null || !definition.available()) return false;
         TitleProgress old = get(player);
@@ -88,19 +88,19 @@ public final class TitleService {
         evaluate(player);
     }
 
-    public static void addEntityKill(ServerPlayer player, ResourceLocation id) {
+    public static void addEntityKill(ServerPlayer player, Identifier id) {
         if (!TitleRegistry.tracksEntity(id)) return;
         TitleCounters value = player.getData(SoulAscensionAttachments.TITLE_COUNTERS).addEntityKill(id);
         player.setData(SoulAscensionAttachments.TITLE_COUNTERS, value); evaluate(player);
     }
 
-    public static void addCollectedItem(ServerPlayer player, ResourceLocation id, long amount) {
+    public static void addCollectedItem(ServerPlayer player, Identifier id, long amount) {
         if (amount <= 0 || !TitleRegistry.tracksItem(id)) return;
         TitleCounters value = player.getData(SoulAscensionAttachments.TITLE_COUNTERS).addCollectedItem(id, amount);
         player.setData(SoulAscensionAttachments.TITLE_COUNTERS, value); evaluate(player);
     }
 
-    public static void addMinedBlock(ServerPlayer player, ResourceLocation id) {
+    public static void addMinedBlock(ServerPlayer player, Identifier id) {
         if (!TitleRegistry.tracksBlock(id)) return;
         TitleCounters value = player.getData(SoulAscensionAttachments.TITLE_COUNTERS).addMinedBlock(id);
         player.setData(SoulAscensionAttachments.TITLE_COUNTERS, value); evaluate(player);
@@ -114,7 +114,7 @@ public final class TitleService {
     }
 
     public static Component activeTitleName(ServerPlayer player) {
-        ResourceLocation id = get(player).activeTitle();
+        Identifier id = get(player).activeTitle();
         return TitleRegistry.get(id).filter(TitleDefinition::available)
             .<Component>map(value -> Component.translatable(value.nameKey())).orElse(Component.empty());
     }

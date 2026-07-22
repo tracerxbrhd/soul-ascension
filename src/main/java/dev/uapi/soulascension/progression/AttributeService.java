@@ -7,7 +7,7 @@ import dev.uapi.soulascension.data.Stat;
 import dev.uapi.soulascension.integration.OptionalIntegrations;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -24,11 +24,11 @@ public final class AttributeService {
 
     private AttributeService() {}
 
-    public record ConfiguredModifier(ResourceLocation attributeId, double amountPerPoint,
+    public record ConfiguredModifier(Identifier attributeId, double amountPerPoint,
                                      AttributeModifier.Operation operation, Double minimumFinal,
                                      Double maximumFinal, String requiredMod, boolean displayInUi,
                                      String category, String formatter, boolean enabled, int index) {}
-    public record ModifierReplacement(ResourceLocation id, double amount, AttributeModifier.Operation operation) {}
+    public record ModifierReplacement(Identifier id, double amount, AttributeModifier.Operation operation) {}
 
     public static void apply(ServerPlayer player, PlayerProgress progress) {
         // Invalid current-format data is read-only: clear stale transient modifiers and fail closed.
@@ -46,11 +46,11 @@ public final class AttributeService {
     private static void applyStat(ServerPlayer player, Stat stat, int points) {
         if (points <= 0) return;
         for (ConfiguredModifier definition : definitions(stat)) {
-            Holder<Attribute> attribute = BuiltInRegistries.ATTRIBUTE.getHolder(definition.attributeId()).orElse(null);
+            Holder<Attribute> attribute = BuiltInRegistries.ATTRIBUTE.get(definition.attributeId()).orElse(null);
             if (attribute == null) continue;
             AttributeInstance instance = player.getAttribute(attribute);
             if (instance == null) continue;
-            ResourceLocation modifierId = modifierId(stat, definition.index());
+            Identifier modifierId = modifierId(stat, definition.index());
             double amount = effectiveAmount(instance, modifierId, definition, points);
             if (Math.abs(amount) < 1.0E-12) continue;
             instance.addTransientModifier(new AttributeModifier(modifierId, amount, definition.operation()));
@@ -61,14 +61,14 @@ public final class AttributeService {
         return AttributeRewardsConfig.definitions(stat);
     }
 
-    public static Optional<ConfiguredModifier> displayDefinition(ResourceLocation attributeId) {
+    public static Optional<ConfiguredModifier> displayDefinition(Identifier attributeId) {
         for (Stat stat : Stat.values()) for (ConfiguredModifier definition : definitions(stat))
             if (definition.attributeId().equals(attributeId)) return Optional.of(definition);
         return Optional.empty();
     }
 
     /** Calculates the modifier amount after applying optional final-value bounds. */
-    public static double effectiveAmount(AttributeInstance instance, ResourceLocation modifierId,
+    public static double effectiveAmount(AttributeInstance instance, Identifier modifierId,
                                          ConfiguredModifier definition, int points) {
         double requested = definition.amountPerPoint() * Math.max(0, points);
         if (requested == 0 || (definition.minimumFinal() == null && definition.maximumFinal() == null)) return requested;
@@ -96,13 +96,13 @@ public final class AttributeService {
         return requested * low;
     }
 
-    public static double valueWithReplacement(AttributeInstance instance, ResourceLocation modifierId,
+    public static double valueWithReplacement(AttributeInstance instance, Identifier modifierId,
                                               double amount, AttributeModifier.Operation operation) {
         return valueWithReplacements(instance, List.of(new ModifierReplacement(modifierId, amount, operation)));
     }
 
     public static double valueWithReplacements(AttributeInstance instance, List<ModifierReplacement> replacements) {
-        Set<ResourceLocation> replacedIds = new HashSet<>();
+        Set<Identifier> replacedIds = new HashSet<>();
         for (ModifierReplacement replacement : replacements) replacedIds.add(replacement.id());
         List<AttributeModifier> modifiers = new ArrayList<>();
         for (AttributeModifier modifier : instance.getModifiers())
@@ -130,23 +130,23 @@ public final class AttributeService {
     }
 
     private static void removeManagedModifiers(ServerPlayer player) {
-        BuiltInRegistries.ATTRIBUTE.holders().forEach(attribute -> {
+        BuiltInRegistries.ATTRIBUTE.listElements().forEach(attribute -> {
             AttributeInstance instance = player.getAttribute(attribute);
             if (instance == null) return;
             for (AttributeModifier modifier : List.copyOf(instance.getModifiers())) {
-                ResourceLocation id = modifier.id();
+                Identifier id = modifier.id();
                 if (id.getNamespace().equals(SoulAscensionMod.MOD_ID) && id.getPath().startsWith("stat_"))
                     instance.removeModifier(id);
             }
         });
     }
 
-    public static ResourceLocation modifierId(Stat stat, int index) {
-        return ResourceLocation.fromNamespaceAndPath(SoulAscensionMod.MOD_ID,
+    public static Identifier modifierId(Stat stat, int index) {
+        return Identifier.fromNamespaceAndPath(SoulAscensionMod.MOD_ID,
             "stat_" + stat.name().toLowerCase(Locale.ROOT) + "_" + index);
     }
 
-    public static Optional<Stat> sourceStat(ResourceLocation modifierId) {
+    public static Optional<Stat> sourceStat(Identifier modifierId) {
         for (Stat stat : Stat.values()) {
             for (ConfiguredModifier definition : definitions(stat)) {
                 if (modifierId(stat, definition.index()).equals(modifierId)) return Optional.of(stat);

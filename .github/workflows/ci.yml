@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [master, "port/**", "mc/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout matching U-API
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.U_API_REPOSITORY || format('{0}/u-api', github.repository_owner) }}
+          ref: ${{ vars.U_API_CI_REF || 'port/26.2' }}
+          path: u-api
+          token: ${{ secrets.U_API_REPOSITORY_TOKEN || secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build and test with local U-API sources
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon clean build -Pu_api_local_path=u-api

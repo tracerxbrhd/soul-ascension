@@ -4,22 +4,19 @@ SOUL-ASCENSION is a configurable RPG progression mod. Dealing valid damage advan
 
 ## Requirements
 
-- Minecraft 1.21.1
-- NeoForge 21.1.234
-- Java 21
-- U-API 2.x (`[2.0.0,3.0.0)`)
+- Minecraft 26.2
+- NeoForge 26.2.0.28-beta
+- Java 25
+- U-API 3.0.0-beta.1 (`[3.0.0-beta.1,4.0.0)`)
 
-Epic Fight is optional. When Epic Fight `21.17.3.1` or a newer `21.17.x` release is
-installed, Soul Ascension automatically enables native Strength, Endurance and Agility
-rewards through Epic Fight's public API. Soul Ascension still builds and runs without Epic
-Fight; no Epic Fight classes, code or assets are bundled in the Soul Ascension JAR. See
-[`docs/EPIC_FIGHT_INTEGRATION.md`](docs/EPIC_FIGHT_INTEGRATION.md) for the exact version,
-balance and configuration contract.
+Epic Fight does not currently publish a Minecraft 26.2 artifact, so native Epic Fight integration
+is disabled on this beta line. Soul Ascension remains fully usable without it and contains no Epic
+Fight classes or assets. Integration can be restored when a compatible public API is released.
 
-Current version: 2.0.0. Mod ID: `soul_ascension`.
+Current version: 3.0.0-beta.1. Mod ID: `soul_ascension`.
 
-Version 2.0 is a clean-install-only release. Worlds, player attachments and configuration files
-from Soul Ascension 1.x are not supported and are not migrated. Start 2.0 with a new world/player
+Version 3.0 beta is a clean-install-only release. Worlds, player attachments and configuration files
+from the Minecraft 1.21.1 line are not supported and are not migrated. Start it with a new world/player
 data and a newly generated `config/uapi/soul-ascension/` directory.
 
 ## Character progression
@@ -48,7 +45,9 @@ Configuration files are created in `config/uapi/soul-ascension/` and are edited 
 
 There is no custom in-game configuration editor. See [`docs/config.md`](docs/config.md) and [`docs/ATTRIBUTE_REWARDS.md`](docs/ATTRIBUTE_REWARDS.md).
 
-Resource-pack paths, including the replaceable Soul Lens model and texture, are documented in [`docs/resourcepacks.md`](docs/resourcepacks.md). Titles and optional integrations are documented in [`docs/TITLES_AND_INTEGRATIONS.md`](docs/TITLES_AND_INTEGRATIONS.md); native Epic Fight support has a dedicated [`integration guide`](docs/EPIC_FIGHT_INTEGRATION.md).
+Resource-pack paths, including the replaceable Soul Lens model and texture, are documented in [`docs/resourcepacks.md`](docs/resourcepacks.md). Titles and optional integrations are documented in [`docs/TITLES_AND_INTEGRATIONS.md`](docs/TITLES_AND_INTEGRATIONS.md); the current Epic Fight compatibility status is tracked in [`docs/EPIC_FIGHT_INTEGRATION.md`](docs/EPIC_FIGHT_INTEGRATION.md).
 
-Build on Windows with `gradlew.bat build`. The resulting artifact is
-`build/libs/soul-ascension-2.0.0+mc1.21.1.jar`.
+Keep a sibling `../u-api` checkout to compile directly against local U-API sources, then build on
+Windows with Java 25 using `gradlew.bat build`. Set `-Pu_api_local_path=` to resolve the published
+Maven coordinate instead. The resulting artifact is
+`build/libs/soul-ascension-3.0.0-beta.1+mc26.2.jar`.

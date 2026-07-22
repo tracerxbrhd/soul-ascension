@@ -10,9 +10,9 @@ public final class ClientPublicProfileHandler {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null) return;
         if (minecraft.player.getUUID().equals(payload.profile().playerId())) {
-            minecraft.setScreen(new CharacterScreen());
+            minecraft.setScreenAndShow(new CharacterScreen());
         } else {
-            minecraft.setScreen(new CharacterScreen(payload.profile()));
+            minecraft.setScreenAndShow(new CharacterScreen(payload.profile()));
         }
     }
 }

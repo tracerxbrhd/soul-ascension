@@ -2,7 +2,7 @@ package dev.uapi.soulascension.config;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.Locale;
 import java.util.Optional;
@@ -75,17 +75,17 @@ public final class SoulAscensionClientConfig {
 
     private SoulAscensionClientConfig() {}
 
-    public static boolean hiddenAttribute(ResourceLocation id) {
+    public static boolean hiddenAttribute(Identifier id) {
         SoulAscensionClientRuntimeConfig config = SoulAscensionClientConfigManager.current();
         if (contains(config.visibleAttributes(), id)) return false;
         return contains(config.hiddenAttributes(), id);
     }
 
-    public static boolean visibleOverride(ResourceLocation id) {
+    public static boolean visibleOverride(Identifier id) {
         return contains(SoulAscensionClientConfigManager.current().visibleAttributes(), id);
     }
 
-    public static Optional<String> categoryOverride(ResourceLocation id) {
+    public static Optional<String> categoryOverride(Identifier id) {
         for (String entry : SoulAscensionClientConfigManager.current().attributeCategories().split(";")) {
             String[] parts = entry.trim().split("=", 2);
             if (parts.length == 2 && parts[0].trim().equals(id.toString())) {
@@ -96,7 +96,7 @@ public final class SoulAscensionClientConfig {
         return Optional.empty();
     }
 
-    private static boolean contains(String configured, ResourceLocation id) {
+    private static boolean contains(String configured, Identifier id) {
         for (String value : configured.split(",")) if (value.trim().equals(id.toString())) return true;
         return false;
     }

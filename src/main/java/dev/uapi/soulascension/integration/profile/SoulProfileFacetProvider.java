@@ -18,16 +18,16 @@ import dev.uapi.soulascension.title.TitleService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 
 /** Publishes only the same deliberately public progression subset as the Soul Badge/Lens. */
 public final class SoulProfileFacetProvider implements ProfileFacetProvider {
-    private static final ResourceLocation PROVIDER_ID = SoulAscensionMod.id("profile_facets");
-    private static final ResourceLocation FACET_ID = SoulAscensionMod.id("public_progression");
+    private static final Identifier PROVIDER_ID = SoulAscensionMod.id("profile_facets");
+    private static final Identifier FACET_ID = SoulAscensionMod.id("public_progression");
 
     @Override
-    public ResourceLocation providerId() {
+    public Identifier providerId() {
         return PROVIDER_ID;
     }
 
@@ -43,7 +43,7 @@ public final class SoulProfileFacetProvider implements ProfileFacetProvider {
         List<ProfileFacetField> fields = new ArrayList<>();
         fields.add(ProfileFacetField.prominent("profile_facet.soul_ascension.level",
             Integer.toString(progress.level())));
-        ResourceLocation activeTitle = TitleService.get(subject).activeTitle();
+        Identifier activeTitle = TitleService.get(subject).activeTitle();
         if (!TitleProgress.NONE.equals(activeTitle)) {
             ProfileFacetText title = TitleRegistry.get(activeTitle)
                 .map(definition -> ProfileFacetText.translatable(definition.nameKey()))

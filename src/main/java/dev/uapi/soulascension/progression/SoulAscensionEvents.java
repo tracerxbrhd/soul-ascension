@@ -29,7 +29,7 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerXpEvent;
-import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.block.BreakBlockEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.common.crafting.DataComponentIngredient;
 
@@ -47,12 +47,12 @@ public final class SoulAscensionEvents {
     public static void onDamage(LivingDamageEvent.Post event) {
         LivingEntity target = event.getEntity();
         if (!(event.getSource().getEntity() instanceof ServerPlayer player) || target == player || target instanceof ServerPlayer) return;
-        if (target.getType().is(SoulAscensionTags.NO_EXPERIENCE)) return;
+        if (target.getType().builtInRegistryHolder().is(SoulAscensionTags.NO_EXPERIENCE)) return;
         SoulAscensionRuntimeConfig config = SoulAscensionConfigManager.current();
         if (config.ignoreTamed() && target instanceof TamableAnimal animal && animal.isTame()) return;
         if (config.ignorePlayerCreated()
-            && target.getTags().contains("soul_ascension:player_created")) return;
-        double actualDamage = Math.max(0, event.getNewDamage());
+            && target.entityTags().contains("soul_ascension:player_created")) return;
+        double actualDamage = Math.max(0, event.getHealthDamage());
         if (actualDamage <= 0) return;
 
         DamageLedger ledger = target.getData(SoulAscensionAttachments.DAMAGE_LEDGER);
@@ -128,7 +128,7 @@ public final class SoulAscensionEvents {
     }
 
     @SubscribeEvent
-    public static void onBlockMined(BlockEvent.BreakEvent event) {
+    public static void onBlockMined(BreakBlockEvent event) {
         if (!event.isCanceled() && event.getPlayer() instanceof ServerPlayer player)
             TitleService.addMinedBlock(player, BuiltInRegistries.BLOCK.getKey(event.getState().getBlock()));
     }

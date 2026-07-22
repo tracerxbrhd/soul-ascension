@@ -1,7 +1,7 @@
 package dev.uapi.soulascension.network;
 
 import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +16,7 @@ import java.util.UUID;
  * every lens refresh only wastes bandwidth and repeatedly touches the game-profile property map.</p>
  */
 public record SoulLensProfileData(UUID playerId, String playerName, int level,
-                                  ResourceLocation activeTitle,
+                                  Identifier activeTitle,
                                   int strength, int endurance, int agility,
                                   int intelligence, int perception,
                                   List<PublicProfileData.PublicAttribute> attributes) {
@@ -37,7 +37,7 @@ public record SoulLensProfileData(UUID playerId, String playerName, int level,
         UUID playerId = buffer.readUUID();
         String playerName = buffer.readUtf(MAX_NAME_LENGTH);
         int level = buffer.readVarInt();
-        ResourceLocation activeTitle = buffer.readResourceLocation();
+        Identifier activeTitle = buffer.readIdentifier();
         int strength = buffer.readVarInt();
         int endurance = buffer.readVarInt();
         int agility = buffer.readVarInt();
@@ -49,7 +49,7 @@ public record SoulLensProfileData(UUID playerId, String playerName, int level,
         List<PublicProfileData.PublicAttribute> attributes = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             attributes.add(new PublicProfileData.PublicAttribute(
-                buffer.readResourceLocation(), buffer.readDouble()));
+                buffer.readIdentifier(), buffer.readDouble()));
         }
         return new SoulLensProfileData(playerId, playerName, level, activeTitle, strength, endurance,
             agility, intelligence, perception, attributes);
@@ -59,7 +59,7 @@ public record SoulLensProfileData(UUID playerId, String playerName, int level,
         buffer.writeUUID(playerId);
         buffer.writeUtf(playerName, MAX_NAME_LENGTH);
         buffer.writeVarInt(level);
-        buffer.writeResourceLocation(activeTitle);
+        buffer.writeIdentifier(activeTitle);
         buffer.writeVarInt(strength);
         buffer.writeVarInt(endurance);
         buffer.writeVarInt(agility);
@@ -67,7 +67,7 @@ public record SoulLensProfileData(UUID playerId, String playerName, int level,
         buffer.writeVarInt(perception);
         buffer.writeVarInt(attributes.size());
         for (PublicProfileData.PublicAttribute attribute : attributes) {
-            buffer.writeResourceLocation(attribute.id());
+            buffer.writeIdentifier(attribute.id());
             buffer.writeDouble(attribute.value());
         }
     }

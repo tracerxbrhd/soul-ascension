@@ -10,7 +10,7 @@ import dev.uapi.soulascension.network.PublicProfilePayload;
 import dev.uapi.soulascension.network.SoulLensProfileData;
 import dev.uapi.soulascension.title.TitleService;
 import net.minecraft.core.Holder;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -39,7 +39,7 @@ public final class PublicProfileService {
         if (!viewer.getUUID().equals(target.getUUID())
             && !target.getData(SoulAscensionAttachments.PROFILE_SETTINGS).publicProfile()) {
             viewer.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
-                "message.soul_ascension.public_profile.private", target.getGameProfile().getName()));
+                "message.soul_ascension.public_profile.private", target.getGameProfile().name()));
             return false;
         }
         PacketDistributor.sendToPlayer(viewer, new PublicProfilePayload(snapshot(viewer, target)));
@@ -52,14 +52,14 @@ public final class PublicProfileService {
 
     public static PublicProfileData snapshot(ServerPlayer viewer, ServerPlayer target) {
         PlayerProgress progress = SoulAscensionService.get(target);
-        Property texture = target.getGameProfile().getProperties().get("textures").stream().findFirst().orElse(null);
+        Property texture = target.getGameProfile().properties().get("textures").stream().findFirst().orElse(null);
         String skinValue = texture == null ? "" : texture.value();
         String skinSignature = texture == null || !texture.hasSignature() ? "" : texture.signature();
-        return new PublicProfileData(target.getUUID(), target.getGameProfile().getName(),
+        return new PublicProfileData(target.getUUID(), target.getGameProfile().name(),
             skinValue, skinSignature,
             progress.level(), TitleService.get(target).activeTitle(), progress.strength(), progress.endurance(),
             progress.agility(), progress.intelligence(), progress.perception(), snapshotAttributes(target),
-            ProfileFacetRegistry.query(target.getServer(), viewer.getUUID(), target.getUUID(),
+            ProfileFacetRegistry.query(target.level().getServer(), viewer.getUUID(), target.getUUID(),
                 ProfileFacetContext.PUBLIC_PROFILE).stream()
                 // Base Soul progression is already represented by the fields above. Keep this
                 // extension list for other optional mods instead of rendering it twice.
@@ -70,7 +70,7 @@ public final class PublicProfileService {
     /** Builds the high-frequency Lens projection without reading or transmitting signed skin data. */
     public static SoulLensProfileData soulLensSnapshot(ServerPlayer target) {
         PlayerProgress progress = SoulAscensionService.get(target);
-        return new SoulLensProfileData(target.getUUID(), target.getGameProfile().getName(), progress.level(),
+        return new SoulLensProfileData(target.getUUID(), target.getGameProfile().name(), progress.level(),
             TitleService.get(target).activeTitle(), progress.strength(), progress.endurance(), progress.agility(),
             progress.intelligence(), progress.perception(), snapshotAttributes(target));
     }
@@ -79,7 +79,7 @@ public final class PublicProfileService {
         List<PublicProfileData.PublicAttribute> attributes = new ArrayList<>();
         for (Holder<Attribute> holder : PUBLIC_ATTRIBUTES) {
             AttributeInstance instance = target.getAttribute(holder);
-            ResourceLocation id = holder.unwrapKey().orElseThrow().location();
+            Identifier id = holder.unwrapKey().orElseThrow().identifier();
             if (instance != null) attributes.add(new PublicProfileData.PublicAttribute(id, instance.getValue()));
         }
         return List.copyOf(attributes);

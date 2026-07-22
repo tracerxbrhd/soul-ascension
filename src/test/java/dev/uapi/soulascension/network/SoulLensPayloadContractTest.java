@@ -3,7 +3,7 @@ package dev.uapi.soulascension.network;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -17,7 +17,7 @@ final class SoulLensPayloadContractTest {
     @Test
     void responseEchoesObservationSessionAndUsesLightweightProjection() {
         SoulLensProfileData profile = new SoulLensProfileData(TARGET, "Player", 7,
-            ResourceLocation.fromNamespaceAndPath("soul_ascension", "none"),
+            Identifier.fromNamespaceAndPath("soul_ascension", "none"),
             1, 2, 3, 4, 5, List.of());
         SoulLensProfilePayload payload = new SoulLensProfilePayload(
             TARGET, 42L, SoulLensProfilePayload.VISIBLE, profile);
@@ -32,7 +32,7 @@ final class SoulLensPayloadContractTest {
     @Test
     void statusAndProfilePresenceMustAgree() {
         SoulLensProfileData profile = new SoulLensProfileData(TARGET, "Player", 7,
-            ResourceLocation.fromNamespaceAndPath("soul_ascension", "none"),
+            Identifier.fromNamespaceAndPath("soul_ascension", "none"),
             1, 2, 3, 4, 5, List.of());
 
         assertThrows(IllegalArgumentException.class, () -> new SoulLensProfilePayload(
@@ -40,7 +40,7 @@ final class SoulLensPayloadContractTest {
         assertThrows(IllegalArgumentException.class, () -> new SoulLensProfilePayload(
             TARGET, 1L, SoulLensProfilePayload.OUT_OF_RANGE, profile));
         SoulLensProfileData wrongTarget = new SoulLensProfileData(UUID.randomUUID(), "Other", 7,
-            ResourceLocation.fromNamespaceAndPath("soul_ascension", "none"),
+            Identifier.fromNamespaceAndPath("soul_ascension", "none"),
             1, 2, 3, 4, 5, List.of());
         assertThrows(IllegalArgumentException.class, () -> new SoulLensProfilePayload(
             TARGET, 1L, SoulLensProfilePayload.VISIBLE, wrongTarget));

@@ -14,9 +14,9 @@ All files are edited manually while the game is stopped. The mod does not provid
 
 Runtime code reads immutable snapshots populated after NeoForge loads each TOML spec, so it does not access config values prematurely. Missing files are generated with defaults.
 
-`attribute_rewards.json` is validated by a dedicated loader. The clean 2.0 schema is identified by `"format_version": 2`; files without that exact marker are left untouched and ignored. A malformed current-format file is renamed to `attribute_rewards.json.broken.<timestamp>.bak` and replaced with valid 2.0 defaults. The generated defaults already contain dormant optional Epic Fight rules; `required_mod: "epicfight"` prevents them from being resolved when Epic Fight is absent.
+`attribute_rewards.json` is validated by a dedicated loader. The current schema is identified by `"format_version": 2`; files without that exact marker are left untouched and ignored. A malformed current-format file is renamed to `attribute_rewards.json.broken.<timestamp>.bak` and replaced with valid defaults. The generated defaults retain dormant Epic Fight rules for future compatibility; they are not active on Minecraft 26.2 because no compatible Epic Fight API artifact is currently available.
 
-Soul Ascension 2.0 does not read, upgrade or merge Soul Ascension 1.x player data and configuration. Generate this directory from a clean 2.0 installation. Native Epic Fight settings and supported versions are documented in [`EPIC_FIGHT_INTEGRATION.md`](EPIC_FIGHT_INTEGRATION.md).
+Soul Ascension 3.0 does not read, upgrade or merge Soul Ascension 1.x/2.x player data and configuration. Generate this directory from a clean 3.0 installation. The current Epic Fight compatibility status is documented in [`EPIC_FIGHT_INTEGRATION.md`](EPIC_FIGHT_INTEGRATION.md).
 
 ## TOML layout
 

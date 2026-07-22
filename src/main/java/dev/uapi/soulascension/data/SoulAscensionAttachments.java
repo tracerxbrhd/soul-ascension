@@ -12,27 +12,31 @@ public final class SoulAscensionAttachments {
         DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, SoulAscensionMod.MOD_ID);
 
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<PlayerProgress>> PROGRESS = TYPES.register(
-        "character_progress", () -> AttachmentType.builder(PlayerProgress::initial).serialize(PlayerProgress.CODEC)
+        "character_progress", () -> AttachmentType.builder(PlayerProgress::initial)
+            .serialize(PlayerProgress.CODEC.fieldOf("data"))
             .copyOnDeath().sync((holder, player) -> holder == player, PlayerProgress.STREAM_CODEC).build());
 
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<DamageLedger>> DAMAGE_LEDGER = TYPES.register(
         "damage_ledger", () -> AttachmentType.builder(() -> new DamageLedger()).build());
 
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<TitleProgress>> TITLES = TYPES.register(
-        "title_progress", () -> AttachmentType.builder(TitleProgress::initial).serialize(TitleProgress.CODEC)
+        "title_progress", () -> AttachmentType.builder(TitleProgress::initial)
+            .serialize(TitleProgress.CODEC.fieldOf("data"))
             .copyOnDeath().sync((holder, player) -> holder == player, TitleProgress.STREAM_CODEC).build());
 
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<TitleCounters>> TITLE_COUNTERS = TYPES.register(
-        "title_counters", () -> AttachmentType.builder(TitleCounters::initial).serialize(TitleCounters.CODEC)
+        "title_counters", () -> AttachmentType.builder(TitleCounters::initial)
+            .serialize(TitleCounters.CODEC.fieldOf("data"))
             .copyOnDeath().build());
 
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<SoulProfileSettings>> PROFILE_SETTINGS =
         TYPES.register("profile_settings", () -> AttachmentType.builder(SoulProfileSettings::defaults)
-            .serialize(SoulProfileSettings.CODEC).copyOnDeath()
+            .serialize(SoulProfileSettings.CODEC.fieldOf("data")).copyOnDeath()
             .sync((holder, player) -> holder == player, SoulProfileSettings.STREAM_CODEC).build());
 
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<ActiveTitleData>> ACTIVE_TITLE = TYPES.register(
-        "active_title", () -> AttachmentType.builder(ActiveTitleData::none).serialize(ActiveTitleData.CODEC)
+        "active_title", () -> AttachmentType.builder(ActiveTitleData::none)
+            .serialize(ActiveTitleData.CODEC.fieldOf("data"))
             .copyOnDeath().sync((holder, player) -> true, ActiveTitleData.STREAM_CODEC).build());
 
     private SoulAscensionAttachments() {}

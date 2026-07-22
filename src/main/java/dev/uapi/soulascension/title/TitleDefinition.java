@@ -7,7 +7,7 @@ import dev.uapi.soulascension.data.PlayerProgress;
 import dev.uapi.soulascension.data.Stat;
 import dev.uapi.soulascension.data.TitleProgress;
 import dev.uapi.soulascension.data.TitleCounters;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stats;
 
@@ -20,8 +20,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-public record TitleDefinition(ResourceLocation id, String nameKey, String descriptionKey,
-                              ResourceLocation icon, int order, boolean hidden,
+public record TitleDefinition(Identifier id, String nameKey, String descriptionKey,
+                              Identifier icon, int order, boolean hidden,
                               List<String> requiredMods, Conditions conditions) {
     public TitleDefinition {
         requiredMods = List.copyOf(requiredMods);
@@ -33,10 +33,10 @@ public record TitleDefinition(ResourceLocation id, String nameKey, String descri
         return available() && conditions.matches(player, progress, titles, counters);
     }
 
-    public static TitleDefinition parse(ResourceLocation id, JsonObject json) {
+    public static TitleDefinition parse(Identifier id, JsonObject json) {
         String name = string(json, "name", "title." + id.getNamespace() + "." + id.getPath());
         String description = string(json, "description", name + ".description");
-        ResourceLocation icon = ResourceLocation.parse(string(json, "icon", "soul_ascension:textures/gui/icons/title.png"));
+        Identifier icon = Identifier.parse(string(json, "icon", "soul_ascension:textures/gui/icons/title.png"));
         int order = integer(json, "order", 0, -1_000_000, 1_000_000);
         boolean hidden = json.has("hidden") && json.get("hidden").getAsBoolean();
         List<String> mods = strings(json, "required_mods");
@@ -45,10 +45,10 @@ public record TitleDefinition(ResourceLocation id, String nameKey, String descri
     }
 
     public record Conditions(int minimumLevel, Map<Stat, Integer> minimumStats,
-                             Map<ResourceLocation, Long> entityKills,
-                             Map<ResourceLocation, Long> itemsCollected,
-                             Map<ResourceLocation, Long> blocksMined,
-                             Set<ResourceLocation> requiredTitles, long playTimeTicks) {
+                             Map<Identifier, Long> entityKills,
+                             Map<Identifier, Long> itemsCollected,
+                             Map<Identifier, Long> blocksMined,
+                             Set<Identifier> requiredTitles, long playTimeTicks) {
         public Conditions {
             minimumStats = Map.copyOf(minimumStats); entityKills = Map.copyOf(entityKills);
             itemsCollected = Map.copyOf(itemsCollected); blocksMined = Map.copyOf(blocksMined);
@@ -78,21 +78,21 @@ public record TitleDefinition(ResourceLocation id, String nameKey, String descri
         }
     }
 
-    private static Map<ResourceLocation, Long> counters(JsonObject json, String field) {
-        Map<ResourceLocation, Long> result = new LinkedHashMap<>();
+    private static Map<Identifier, Long> counters(JsonObject json, String field) {
+        Map<Identifier, Long> result = new LinkedHashMap<>();
         if (!json.has(field)) return result;
         for (Map.Entry<String, JsonElement> entry : json.getAsJsonObject(field).entrySet()) {
             long value = entry.getValue().getAsLong();
             if (value < 1) throw new IllegalArgumentException(field + " values must be positive");
-            result.put(ResourceLocation.parse(entry.getKey()), value);
+            result.put(Identifier.parse(entry.getKey()), value);
         }
         return result;
     }
 
-    private static List<ResourceLocation> ids(JsonObject json, String field) {
-        List<ResourceLocation> result = new ArrayList<>();
+    private static List<Identifier> ids(JsonObject json, String field) {
+        List<Identifier> result = new ArrayList<>();
         if (json.has(field)) for (JsonElement element : json.getAsJsonArray(field))
-            result.add(ResourceLocation.parse(element.getAsString()));
+            result.add(Identifier.parse(element.getAsString()));
         return result;
     }
 

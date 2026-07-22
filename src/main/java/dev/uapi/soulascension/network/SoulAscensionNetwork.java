@@ -14,7 +14,7 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 public final class SoulAscensionNetwork {
-    /** Exact 2.0 wire contract, including versioned synchronized player attachments. */
+    /** Versioned wire contract for synchronized player attachments. */
     public static final String PROTOCOL_VERSION = "11";
 
     private SoulAscensionNetwork() {}
@@ -36,7 +36,7 @@ public final class SoulAscensionNetwork {
             if (context.player() instanceof ServerPlayer player)
                 SoulLensService.inspect(player, payload.targetId(), payload.observationId());
         }));
-        if (FMLEnvironment.dist == Dist.CLIENT) registerClientHandlers(registrar);
+        if (FMLEnvironment.getDist() == Dist.CLIENT) registerClientHandlers(registrar);
         else registerNoopClientHandlers(registrar);
     }
 

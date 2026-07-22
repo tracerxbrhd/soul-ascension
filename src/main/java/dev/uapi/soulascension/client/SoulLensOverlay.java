@@ -1,6 +1,5 @@
 package dev.uapi.soulascension.client;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import dev.uapi.client.hud.HudAnchor;
 import dev.uapi.client.hud.HudElement;
 import dev.uapi.client.hud.HudElementRegistration;
@@ -16,11 +15,12 @@ import dev.uapi.soulascension.network.SoulLensProfileData;
 import dev.uapi.soulascension.network.SoulLensProfilePayload;
 import dev.uapi.soulascension.network.SoulLensRequestPayload;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
@@ -29,15 +29,15 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 import java.util.List;
 import java.util.UUID;
 
 public final class SoulLensOverlay {
     private record CachedAttributeRow(Component name, Component value) {}
-    private static final ResourceLocation PANEL = SoulAscensionMod.id("character/panel");
-    private static final ResourceLocation INSET = SoulAscensionMod.id("character/inset");
+    private static final Identifier PANEL = SoulAscensionMod.id("character/panel");
+    private static final Identifier INSET = SoulAscensionMod.id("character/inset");
     private static final int NO_TARGET = -2;
     private static final int LOADING = -1;
     private static final int STAT_ROW_HEIGHT = 17;
@@ -78,7 +78,7 @@ public final class SoulLensOverlay {
     private static long titleCatalogRevision = -1;
     private static HudElementRegistration hudRegistration;
     private static final HudElement HUD_ELEMENT = new HudElement() {
-        @Override public ResourceLocation id() { return SoulAscensionMod.id("soul_lens_overlay"); }
+        @Override public Identifier id() { return SoulAscensionMod.id("soul_lens_overlay"); }
         @Override public int width() { return overlayWidth(Minecraft.getInstance().getWindow().getGuiScaledWidth()); }
         @Override public int height() { return overlayHeight(Minecraft.getInstance().getWindow().getGuiScaledHeight()); }
         @Override public HudPlacement defaultPlacement() {
@@ -99,7 +99,7 @@ public final class SoulLensOverlay {
     private static void tick(Minecraft minecraft) {
         if (titleCatalogRevision != ClientTitleCatalog.revision()) rebuildCache();
         LocalPlayer player = minecraft.player;
-        if (!isUsing(player) || minecraft.level == null || minecraft.screen != null) {
+        if (!isUsing(player) || minecraft.level == null || minecraft.gui.screen() != null) {
             clear();
             return;
         }
@@ -132,7 +132,7 @@ public final class SoulLensOverlay {
         }
         if (targetId != null && ++ticksSinceRequest >= ClientProgressionRules.soulLensUpdateInterval()) {
             ticksSinceRequest = 0;
-            PacketDistributor.sendToServer(new SoulLensRequestPayload(targetId, observationId));
+            ClientPacketDistributor.sendToServer(new SoulLensRequestPayload(targetId, observationId));
         }
     }
 
@@ -160,7 +160,7 @@ public final class SoulLensOverlay {
             cachedStatValues[index] = Integer.toString(statValue(index));
         java.util.ArrayList<CachedAttributeRow> rows = new java.util.ArrayList<>();
         for (PublicProfileData.PublicAttribute attribute : profile.attributes()) {
-            var holder = BuiltInRegistries.ATTRIBUTE.getHolder(attribute.id()).orElse(null);
+            var holder = BuiltInRegistries.ATTRIBUTE.get(attribute.id()).orElse(null);
             if (holder == null) continue;
             rows.add(new CachedAttributeRow(Component.translatable(holder.value().getDescriptionId()),
                 DynamicAttributeView.formatValue(attribute.id(), holder.value(), attribute.value())));
@@ -170,7 +170,7 @@ public final class SoulLensOverlay {
 
     public static boolean handleScroll(double delta) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.screen != null || !isUsing(minecraft.player)
+        if (minecraft.gui.screen() != null || !isUsing(minecraft.player)
             || !ClientProgressionRules.soulLensBlockHotbarScroll()) return false;
         if (profile != null)
             scroll = Math.max(0, Math.min(maxScroll(), scroll - (int) Math.signum(delta) * 18));
@@ -179,7 +179,7 @@ public final class SoulLensOverlay {
 
     private static void render(HudRenderContext context) {
         Minecraft minecraft = context.minecraft();
-        GuiGraphics graphics = context.graphics();
+        GuiGraphicsExtractor graphics = context.graphics();
         if (!shouldRender(minecraft)) return;
 
         boolean active = status == SoulLensProfilePayload.VISIBLE && profile != null;
@@ -191,7 +191,7 @@ public final class SoulLensOverlay {
         int y = 0;
 
         blit(graphics, PANEL, x, y, width, height, opacity);
-        graphics.drawString(minecraft.font, OVERLAY_TITLE,
+        graphics.text(minecraft.font, OVERLAY_TITLE,
             x + 11, y + 11, color(SoulUiTheme.TEXT, opacity), false);
         graphics.fill(x + 9, y + 29, x + width - 9, y + 30, color(SoulUiTheme.DIVIDER, opacity));
         blit(graphics, INSET, x + 8, y + 37, width - 16, height - 45, opacity);
@@ -202,7 +202,7 @@ public final class SoulLensOverlay {
             List<net.minecraft.util.FormattedCharSequence> lines = minecraft.font.split(state, width - 28);
             int lineY = y + 44 + Math.max(0, (height - 51 - lines.size() * 10) / 2);
             for (var line : lines) {
-                graphics.drawCenteredString(minecraft.font, line, x + width / 2, lineY, color(messageColor, opacity));
+                graphics.centeredText(minecraft.font, line, x + width / 2, lineY, color(messageColor, opacity));
                 lineY += 10;
             }
             return;
@@ -211,14 +211,14 @@ public final class SoulLensOverlay {
             height - ACTIVE_CONTENT_TOP - 10, opacity);
     }
 
-    private static void renderProfile(GuiGraphics graphics, Minecraft minecraft, int x, int y, int width,
+    private static void renderProfile(GuiGraphicsExtractor graphics, Minecraft minecraft, int x, int y, int width,
                                       int height, double opacity) {
         if (!cachedTitle.getString().isEmpty())
-            graphics.drawCenteredString(minecraft.font, cachedTitle, x + width / 2, y + 3,
+            graphics.centeredText(minecraft.font, cachedTitle, x + width / 2, y + 3,
                 color(SoulUiTheme.ACCENT, opacity));
-        graphics.drawCenteredString(minecraft.font, cachedPlayerName, x + width / 2, y + 15,
+        graphics.centeredText(minecraft.font, cachedPlayerName, x + width / 2, y + 15,
             color(SoulUiTheme.TEXT, opacity));
-        graphics.drawCenteredString(minecraft.font, cachedLevel,
+        graphics.centeredText(minecraft.font, cachedLevel,
             x + width / 2, y + 27, color(SoulUiTheme.MUTED, opacity));
         graphics.fill(x + 5, y + 40, x + width - 5, y + 41, color(SoulUiTheme.DIVIDER, opacity));
 
@@ -229,14 +229,14 @@ public final class SoulLensOverlay {
             Component name = STAT_NAMES[index];
             String valueText = cachedStatValues[index];
             int valueX = x + width - 5 - minecraft.font.width(valueText);
-            graphics.drawString(minecraft.font, trim(minecraft, name, valueX - x - 9), x + 4, rowY + 3,
+            graphics.text(minecraft.font, trim(minecraft, name, valueX - x - 9), x + 4, rowY + 3,
                 color(SoulUiTheme.TEXT, opacity), false);
-            graphics.drawString(minecraft.font, valueText, valueX, rowY + 3,
+            graphics.text(minecraft.font, valueText, valueX, rowY + 3,
                 color(SoulUiTheme.VALUE, opacity), false);
         }
 
         int attributesTop = statY + STAT_COUNT * STAT_ROW_HEIGHT + 6;
-        graphics.drawString(minecraft.font, PUBLIC_ATTRIBUTES,
+        graphics.text(minecraft.font, PUBLIC_ATTRIBUTES,
             x + 3, attributesTop, color(SoulUiTheme.ACCENT, opacity), false);
         int clipTop = attributesTop + 14;
         int clipBottom = y + height;
@@ -250,9 +250,9 @@ public final class SoulLensOverlay {
             if (rowY > clipBottom) break;
             drawRow(graphics, x, rowY, width, 15, opacity);
             int valueX = x + width - 4 - minecraft.font.width(attribute.value());
-            graphics.drawString(minecraft.font, trim(minecraft, attribute.name(), valueX - x - 8), x + 4, rowY + 3,
+            graphics.text(minecraft.font, trim(minecraft, attribute.name(), valueX - x - 8), x + 4, rowY + 3,
                 color(SoulUiTheme.TEXT, opacity), false);
-            graphics.drawString(minecraft.font, attribute.value(), valueX, rowY + 3,
+            graphics.text(minecraft.font, attribute.value(), valueX, rowY + 3,
                 color(SoulUiTheme.VALUE, opacity), false);
             rowY += STAT_ROW_HEIGHT;
         }
@@ -290,7 +290,7 @@ public final class SoulLensOverlay {
     }
 
     private static boolean shouldRender(Minecraft minecraft) {
-        return isUsing(minecraft.player) && !minecraft.options.hideGui
+        return isUsing(minecraft.player) && !minecraft.gui.hud.isHidden()
             && (status != NO_TARGET || ClientProgressionRules.soulLensShowIdleHint());
     }
 
@@ -354,16 +354,13 @@ public final class SoulLensOverlay {
         return SoulUiTheme.withOpacity(base, opacity);
     }
 
-    private static void blit(GuiGraphics graphics, ResourceLocation sprite, int x, int y, int width, int height,
+    private static void blit(GuiGraphicsExtractor graphics, Identifier sprite, int x, int y, int width, int height,
                              double opacity) {
-        RenderSystem.enableBlend();
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, (float) Math.max(0.0, Math.min(1.0, opacity)));
-        graphics.blitSprite(sprite, x, y, width, height);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderSystem.disableBlend();
+        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x, y, width, height,
+            (float) Math.max(0.0, Math.min(1.0, opacity)));
     }
 
-    private static void drawRow(GuiGraphics graphics, int x, int y, int width, int height, double opacity) {
+    private static void drawRow(GuiGraphicsExtractor graphics, int x, int y, int width, int height, double opacity) {
         graphics.fill(x, y, x + width, y + height, color(0xE8140F1D, opacity));
         graphics.fill(x, y, x + width, y + 1, color(SoulUiTheme.DIVIDER, opacity));
         graphics.fill(x, y + height - 1, x + width, y + height, color(0xFF2D2438, opacity));

@@ -26,7 +26,7 @@ import dev.uapi.soulascension.progression.AttributeService;
 import dev.uapi.soulascension.progression.SoulAscensionEvents;
 import dev.uapi.soulascension.progression.SoulAscensionService;
 import dev.uapi.soulascension.title.TitleReloadListener;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
@@ -81,7 +81,7 @@ public final class SoulAscensionMod {
         MOD_ID, "main", "itemGroup.soul_ascension", () -> AMNESIA_SCROLL.get().getDefaultInstance());
 
     public SoulAscensionMod(IEventBus modBus, ModContainer container) {
-        // Vanilla 1.21.1 does not synchronize attack damage to clients. The
+        // Vanilla does not synchronize attack damage to clients. The
         // character screen needs the authoritative value without optional
         // attribute mods being installed.
         Attributes.ATTACK_DAMAGE.value().setSyncable(true);
@@ -114,7 +114,7 @@ public final class SoulAscensionMod {
         container.registerConfig(ModConfig.Type.CLIENT, SoulAscensionClientConfig.SPEC, "uapi/soul-ascension/client.toml");
         NeoForge.EVENT_BUS.register(SoulAscensionEvents.class);
         NeoForge.EVENT_BUS.register(TitleReloadListener.class);
-        RewardRegistry.registerProvider(ResourceLocation.fromNamespaceAndPath(MOD_ID, "experience"),
+        RewardRegistry.registerProvider(Identifier.fromNamespaceAndPath(MOD_ID, "experience"),
             SoulAscensionService::grantRewardExperience);
     }
 
@@ -150,8 +150,8 @@ public final class SoulAscensionMod {
         });
     }
 
-    public static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
+    public static Identifier id(String path) {
+        return Identifier.fromNamespaceAndPath(MOD_ID, path);
     }
 
 }

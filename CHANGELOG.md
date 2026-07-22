@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.0.0-beta.1 - 2026-07-22
+
+- Ported Soul Ascension to Minecraft 26.2, NeoForge 26.2.0.28-beta and Java 25.
+- Requires U-API 3.0.0-beta.1 and supports direct composite builds from a sibling U-API checkout.
+- Migrated character UI, skin snapshots, HUD rendering, item use, attachments, network sending,
+  permissions, reload listeners and gameplay events to their 26.2 APIs.
+- Replaced the removed baked-model wrapper with 26.2 display-context item-model definitions for
+  the 2D inventory and 3D held Soul Lens presentations.
+- Migrated selected titles into the new extracted name-tag render state.
+- Disabled native Epic Fight integration until Epic Fight publishes a Minecraft 26.2 API artifact.
+- Added pull-request CI and updated tagged GitHub/Modrinth releases for prerelease versions.
+- This is a clean-install beta line; 1.21.1 player data, worlds and configuration are not migrated.
+
 ## 2.0.0 - 2026-07-15
 
 - Requires U-API 2.x (`[2.0.0,3.0.0)`).

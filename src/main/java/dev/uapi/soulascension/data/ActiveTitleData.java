@@ -5,16 +5,16 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.Objects;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /** Exact-version persisted and synchronized selection used by name-tag rendering. */
-public record ActiveTitleData(int dataVersion, ResourceLocation titleId) {
+public record ActiveTitleData(int dataVersion, Identifier titleId) {
     public static final int DATA_VERSION = 2;
 
     public static final Codec<ActiveTitleData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
         PersistedDataVersion.codec(DATA_VERSION, "Soul active title").fieldOf("dataVersion")
             .forGetter(ActiveTitleData::dataVersion),
-        ResourceLocation.CODEC.fieldOf("titleId").forGetter(ActiveTitleData::titleId)
+        Identifier.CODEC.fieldOf("titleId").forGetter(ActiveTitleData::titleId)
     ).apply(instance, ActiveTitleData::new));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, ActiveTitleData> STREAM_CODEC = new StreamCodec<>() {
@@ -22,13 +22,13 @@ public record ActiveTitleData(int dataVersion, ResourceLocation titleId) {
         public ActiveTitleData decode(RegistryFriendlyByteBuf buffer) {
             int version = buffer.readVarInt();
             PersistedDataVersion.require(version, DATA_VERSION, "Soul active title");
-            return new ActiveTitleData(version, buffer.readResourceLocation());
+            return new ActiveTitleData(version, buffer.readIdentifier());
         }
 
         @Override
         public void encode(RegistryFriendlyByteBuf buffer, ActiveTitleData value) {
             buffer.writeVarInt(value.dataVersion());
-            buffer.writeResourceLocation(value.titleId());
+            buffer.writeIdentifier(value.titleId());
         }
     };
 
@@ -41,7 +41,7 @@ public record ActiveTitleData(int dataVersion, ResourceLocation titleId) {
         return of(TitleProgress.NONE);
     }
 
-    public static ActiveTitleData of(ResourceLocation titleId) {
+    public static ActiveTitleData of(Identifier titleId) {
         return new ActiveTitleData(DATA_VERSION, titleId);
     }
 }
