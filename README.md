@@ -13,7 +13,7 @@ Epic Fight does not currently publish a Minecraft 26.2 artifact, so native Epic 
 is disabled on this beta line. Soul Ascension remains fully usable without it and contains no Epic
 Fight classes or assets. Integration can be restored when a compatible public API is released.
 
-Current version: 3.0.0-beta.2. Mod ID: `soul_ascension`.
+Current version: 3.0.0-beta.3. Mod ID: `soul_ascension`.
 
 Version 3.0 beta is a clean-install-only release. Worlds, player attachments and configuration files
 from the Minecraft 1.21.1 line are not supported and are not migrated. Start it with a new world/player
@@ -50,4 +50,4 @@ Resource-pack paths, including the replaceable Soul Lens model and texture, are 
 Keep a sibling `../u-api` checkout to compile directly against local U-API sources, then build on
 Windows with Java 25 using `gradlew.bat build`. Set `-Pu_api_local_path=` to resolve the published
 Maven coordinate instead. The resulting artifact is
-`build/libs/soul-ascension-3.0.0-beta.2+mc26.2.jar`.
+`build/libs/soul-ascension-3.0.0-beta.3+mc26.2.jar`.

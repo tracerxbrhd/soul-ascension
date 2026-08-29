@@ -50,6 +50,9 @@ Black Book icons are normal generated item models:
 - `assets/soul_ascension/textures/item/black_book_intelligence.png`
 - `assets/soul_ascension/textures/item/black_book_perception.png`
 
+The five bundled 16x16 covers deliberately use different silhouettes, fittings and stat emblems;
+replacement packs should preserve that at-a-glance distinction rather than relying on color alone.
+
 The NeoForge mod-list image is the root JAR resource `soul_ascension_banner.png`. Resource packs cannot reliably replace root metadata resources; replace it only in a repackaged mod JAR.
 
 `showAsResourcePack=true` is intentionally not enabled: mod assets are already loaded as client resources, while that flag would only add a redundant selectable pack entry.

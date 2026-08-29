@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.0-beta.3 - 2026-08-29
+
+- Replaced the five near-identical Black Book textures with individual 16x16 covers for Strength,
+  Endurance, Agility, Intelligence and Perception, each using its stat emblem and color language.
+
 ## 3.0.0-beta.2 - 2026-07-22
 
 - Fixed the NeoForge 26.2 item-registration crash caused by constructing items before their IDs
