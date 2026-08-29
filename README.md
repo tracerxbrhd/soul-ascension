@@ -7,7 +7,7 @@ SOUL-ASCENSION is a configurable RPG progression mod. Dealing valid damage advan
 - Minecraft 1.21.1
 - NeoForge 21.1.234
 - Java 21
-- U-API 2.x (`[2.0.0,3.0.0)`)
+- U-API 2.1.0 or newer (`[2.1.0,3.0.0)`)
 
 Epic Fight is optional. When Epic Fight `21.17.3.1` or a newer `21.17.x` release is
 installed, Soul Ascension automatically enables native Strength, Endurance and Agility
@@ -16,7 +16,14 @@ Fight; no Epic Fight classes, code or assets are bundled in the Soul Ascension J
 [`docs/EPIC_FIGHT_INTEGRATION.md`](docs/EPIC_FIGHT_INTEGRATION.md) for the exact version,
 balance and configuration contract.
 
-Current version: 2.0.0. Mod ID: `soul_ascension`.
+NeoOrigins is also declared optional and the compile-time contract is pinned to official
+`v2.2.21+1.21.1`. Native Origin/Class display is not active in that release because its published
+JAR does not contain the documented public current-origin accessor. Soul Ascension does not use
+NeoOrigins internals or require a separate adapter mod. The prepared architecture, exact upstream
+method needed, and activation test matrix are documented in
+[`docs/NEOORIGINS_INTEGRATION.md`](docs/NEOORIGINS_INTEGRATION.md).
+
+Current version: 2.1.0. Mod ID: `soul_ascension`.
 
 Version 2.0 is a clean-install-only release. Worlds, player attachments and configuration files
 from Soul Ascension 1.x are not supported and are not migrated. Start 2.0 with a new world/player
@@ -48,7 +55,7 @@ Configuration files are created in `config/uapi/soul-ascension/` and are edited 
 
 There is no custom in-game configuration editor. See [`docs/config.md`](docs/config.md) and [`docs/ATTRIBUTE_REWARDS.md`](docs/ATTRIBUTE_REWARDS.md).
 
-Resource-pack paths, including the replaceable Soul Lens model and texture, are documented in [`docs/resourcepacks.md`](docs/resourcepacks.md). Titles and optional integrations are documented in [`docs/TITLES_AND_INTEGRATIONS.md`](docs/TITLES_AND_INTEGRATIONS.md); native Epic Fight support has a dedicated [`integration guide`](docs/EPIC_FIGHT_INTEGRATION.md).
+Resource-pack paths, including the replaceable Soul Lens model and texture, are documented in [`docs/resourcepacks.md`](docs/resourcepacks.md). Titles and optional integrations are documented in [`docs/TITLES_AND_INTEGRATIONS.md`](docs/TITLES_AND_INTEGRATIONS.md); Epic Fight and NeoOrigins have dedicated [`Epic Fight`](docs/EPIC_FIGHT_INTEGRATION.md) and [`NeoOrigins`](docs/NEOORIGINS_INTEGRATION.md) integration guides.
 
 Build on Windows with `gradlew.bat build`. The resulting artifact is
-`build/libs/soul-ascension-2.0.0+mc1.21.1.jar`.
+`build/libs/soul-ascension-2.1.0+mc1.21.1.jar`.

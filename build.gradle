@@ -110,6 +110,7 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 dependencies {
     implementation "dev.uapi:u-api:${u_api_version}"
     compileOnly "maven.modrinth:vu3NZ5Ma:${epic_fight_version}"
+    compileOnly "maven.modrinth:neo-origins:${neoorigins_version}"
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -149,6 +150,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
                              mod_version            : mod_version,
                              u_api_version_range    : u_api_version_range,
                              epic_fight_version_range: epic_fight_version_range,
+                             neoorigins_version_range: neoorigins_version_range,
                              mod_authors            : mod_authors,
                              mod_description        : mod_description]
     inputs.properties replaceProperties

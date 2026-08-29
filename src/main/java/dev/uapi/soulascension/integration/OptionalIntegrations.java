@@ -2,6 +2,7 @@ package dev.uapi.soulascension.integration;
 
 import dev.uapi.integration.IntegrationService;
 import dev.uapi.soulascension.SoulAscensionMod;
+import dev.uapi.soulascension.compat.neoorigins.NeoOriginsCompatBootstrap;
 import dev.uapi.soulascension.integration.epicfight.EpicFightIntegration;
 import dev.uapi.soulascension.progression.AttributeService;
 import dev.uapi.soulascension.progression.SoulAscensionService;
@@ -25,7 +26,13 @@ public final class OptionalIntegrations {
     private OptionalIntegrations() {}
 
     public static void bootstrap() {
-        if (!BOOTSTRAPPED.compareAndSet(false, true) || !IntegrationService.isLoaded("epicfight")) return;
+        if (!BOOTSTRAPPED.compareAndSet(false, true)) return;
+        bootstrapEpicFight();
+        if (IntegrationService.isLoaded("neoorigins")) NeoOriginsCompatBootstrap.bootstrap();
+    }
+
+    private static void bootstrapEpicFight() {
+        if (!IntegrationService.isLoaded("epicfight")) return;
         try {
             epicFightAfterAttributes = EpicFightIntegration.bootstrap(OptionalIntegrations::requestAttributeRefresh);
             epicFightActive = true;

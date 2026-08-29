@@ -15,7 +15,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 public final class SoulAscensionNetwork {
     /** Exact 2.0 wire contract, including versioned synchronized player attachments. */
-    public static final String PROTOCOL_VERSION = "11";
+    public static final String PROTOCOL_VERSION = "12";
 
     private SoulAscensionNetwork() {}
 

@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.1.0 - 2026-08-29
+
+- Replaced the five near-identical Black Book textures with individual 16x16 covers for Strength,
+  Endurance, Agility, Intelligence and Perception, each using its stat emblem and color language.
+- Removed the NeoOrigins/Origins diagnostic placeholder tab and player-tag fallback.
+- Prepared an isolated, optional NeoOrigins `v2.2.21+1.21.1` public-API projection for neutral
+  Origin and Class identity cards, without registering it at runtime.
+- Documented the missing published `NeoOriginsAPI.currentOrigin(ServerPlayer, ResourceLocation)`
+  accessor that blocks a correct native integration; no internals, reflection, or adapter mod are
+  used.
+
 ## 2.0.0 - 2026-07-15
 
 - Requires U-API 2.x (`[2.0.0,3.0.0)`).
