@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.0.0 - 2026-09-01
+
+- Promoted the Minecraft 26.2 port to a stable release after the beta line passed startup,
+  resource and gameplay validation.
+- Updated the required U-API line to the stable 3.0.0 release.
+- Added working project and issue-tracker links to the metadata shown by NeoForge mod lists.
+- Contains no gameplay or persisted-data changes from 3.0.0-beta.3.
+
 ## 3.0.0-beta.3 - 2026-08-29
 
 - Replaced the five near-identical Black Book textures with individual 16x16 covers for Strength,

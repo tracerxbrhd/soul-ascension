@@ -16,7 +16,7 @@ Create these GitHub Actions settings before pushing the port branch:
   `U_API_CURSEFORGE_PROJECT_ID`.
 
 `U_API_REF` is normally left unset: the release workflow derives
-`v3.0.0-beta.2+mc26.2` from `gradle.properties`.
+`v3.0.0+mc26.2` from `gradle.properties`.
 
 ## Branch and release
 
@@ -40,9 +40,9 @@ Then run `.\scripts\release.ps1` to create and push the exact tag safely, or use
 manual commands below:
 
 ```text
-git tag -a v3.0.0-beta.2+mc26.2 -m "Soul Ascension 3.0.0-beta.2 for Minecraft 26.2"
-git push github v3.0.0-beta.2+mc26.2
+git tag -a v3.0.0+mc26.2 -m "Soul Ascension 3.0.0 for Minecraft 26.2"
+git push github v3.0.0+mc26.2
 ```
 
 The tag triggers the GitHub/Modrinth release. The workflow declares U-API as a required Modrinth
-dependency and marks this version as beta.
+dependency and publishes this version on the stable release channel.
