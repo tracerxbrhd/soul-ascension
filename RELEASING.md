@@ -10,7 +10,6 @@ Create these GitHub Actions settings before pushing the port branch:
 - secret `MODRINTH_TOKEN` and variable `MODRINTH_PROJECT_ID`;
 - variable `U_API_MODRINTH_PROJECT_ID`;
 - variable `U_API_REPOSITORY` (normally `tracerxbrhd/u-api`);
-- variable `U_API_CI_REF` set to `port/26.2` while the U-API port is under review, then `master`;
 - optional secret `U_API_REPOSITORY_TOKEN` only when U-API is private;
 - optional secret `CURSEFORGE_TOKEN`, variable `CURSEFORGE_PROJECT_ID` and variable
   `U_API_CURSEFORGE_PROJECT_ID`.
