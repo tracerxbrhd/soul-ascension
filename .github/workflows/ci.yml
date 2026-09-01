@@ -13,11 +13,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Resolve U-API source
+        id: uapi
+        shell: bash
+        run: |
+          set -euo pipefail
+          property() { grep -E "^$1=" gradle.properties | head -n1 | cut -d= -f2- | xargs; }
+          version="$(property u_api_version)"
+          minecraft="$(property minecraft_version)"
+          echo "repository=${{ vars.U_API_REPOSITORY || format('{0}/u-api', github.repository_owner) }}" >> "$GITHUB_OUTPUT"
+          echo "ref=v${version}+mc${minecraft}" >> "$GITHUB_OUTPUT"
       - name: Checkout matching U-API
         uses: actions/checkout@v4
         with:
-          repository: ${{ vars.U_API_REPOSITORY || format('{0}/u-api', github.repository_owner) }}
-          ref: ${{ vars.U_API_CI_REF || 'master' }}
+          repository: ${{ steps.uapi.outputs.repository }}
+          ref: ${{ steps.uapi.outputs.ref }}
           path: u-api
           token: ${{ secrets.U_API_REPOSITORY_TOKEN || secrets.GITHUB_TOKEN }}
       - uses: actions/setup-java@v4
