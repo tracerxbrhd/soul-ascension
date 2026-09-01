@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.1.1 - 2026-09-01
+
+- Added working project and issue-tracker links to the metadata shown by NeoForge mod lists.
+- Verified the release build against U-API 2.1.2 without raising the existing compatible runtime
+  dependency range.
+- Added branch CI so patch artifacts are compiled and tested before tagging.
+
 ## 2.1.0 - 2026-08-29
 
 - Replaced the five near-identical Black Book textures with individual 16x16 covers for Strength,

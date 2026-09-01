@@ -23,7 +23,7 @@ NeoOrigins internals or require a separate adapter mod. The prepared architectur
 method needed, and activation test matrix are documented in
 [`docs/NEOORIGINS_INTEGRATION.md`](docs/NEOORIGINS_INTEGRATION.md).
 
-Current version: 2.1.0. Mod ID: `soul_ascension`.
+Current version: 2.1.1. Mod ID: `soul_ascension`.
 
 Version 2.0 is a clean-install-only release. Worlds, player attachments and configuration files
 from Soul Ascension 1.x are not supported and are not migrated. Start 2.0 with a new world/player
@@ -58,4 +58,4 @@ There is no custom in-game configuration editor. See [`docs/config.md`](docs/con
 Resource-pack paths, including the replaceable Soul Lens model and texture, are documented in [`docs/resourcepacks.md`](docs/resourcepacks.md). Titles and optional integrations are documented in [`docs/TITLES_AND_INTEGRATIONS.md`](docs/TITLES_AND_INTEGRATIONS.md); Epic Fight and NeoOrigins have dedicated [`Epic Fight`](docs/EPIC_FIGHT_INTEGRATION.md) and [`NeoOrigins`](docs/NEOORIGINS_INTEGRATION.md) integration guides.
 
 Build on Windows with `gradlew.bat build`. The resulting artifact is
-`build/libs/soul-ascension-2.1.0+mc1.21.1.jar`.
+`build/libs/soul-ascension-2.1.1+mc1.21.1.jar`.
