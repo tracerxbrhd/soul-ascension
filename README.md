@@ -59,3 +59,9 @@ Resource-pack paths, including the replaceable Soul Lens model and texture, are 
 
 Build on Windows with `gradlew.bat build`. The resulting artifact is
 `build/libs/soul-ascension-2.1.1+mc1.21.1.jar`.
+
+## License
+
+Soul Ascension source code is licensed under the [Mozilla Public License 2.0](LICENSE) (`MPL-2.0`). Modified MPL-covered source files distributed to others remain subject to the MPL and their corresponding source must remain available under its terms.
+
+The MPL does not grant rights to the Underworld Studio name, logos, trademarks, or other branding. Third-party software, APIs, libraries, and materials remain subject to their respective licenses and terms. Minecraft and related Minecraft content are owned by their respective rights holders and are not licensed by this project.
