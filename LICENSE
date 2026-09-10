@@ -210,7 +210,7 @@ of liability specific to any jurisdiction.
 ---------------------------------------------------
 
 If it is impossible for You to comply with any of the terms of this License
-with respect to some or all of Covered Software due to statute, judicial
+with respect to some or all of the Covered Software due to statute, judicial
 order, or regulation then You must: (a) comply with the terms of this License
 to the maximum extent possible; and (b) describe the limitations and the code
 they affect. Such description must be placed in a text file included with all
@@ -230,10 +230,10 @@ finally terminates Your grants, and (b) on an ongoing basis, if such
 Contributor fails to notify You of the non-compliance by some reasonable means
 prior to 60 days after You have come back into compliance. Moreover, Your
 grants from a particular Contributor are reinstated on an ongoing basis if
-such Contributor notifies You of the non-compliance with this License, this is
-the first time You have received notice of non-compliance with this License
-from such Contributor, and You become compliant prior to 30 days after your
-receipt of the notice.
+such Contributor notifies You of the non-compliance by some reasonable means,
+this is the first time You have received notice of non-compliance with this
+License from such Contributor, and You become compliant prior to 30 days after
+your receipt of the notice.
 
 5.2. If You initiate litigation against any entity by asserting a patent
 infringement claim (excluding declaratory judgment actions, counter-claims,
@@ -280,12 +280,12 @@ termination shall survive termination.
 *  goodwill, work stoppage, computer failure or malfunction, or any    *
 *  and all other commercial damages or losses, even if such party      *
 *  shall have been informed of the possibility of such damages. This   *
-*  limitation of liability shall not apply to liability for death or
-*  personal injury resulting from such party's negligence to the
-*  extent applicable law prohibits such limitation. Some
-*  jurisdictions do not allow the exclusion or limitation of
-*  incidental or consequential damages, so this exclusion and
-*  limitation may not apply to You.
+*  limitation of liability shall not apply to liability for death or   *
+*  personal injury resulting from such party's negligence to the       *
+*  extent applicable law prohibits such limitation. Some               *
+*  jurisdictions do not allow the exclusion or limitation of           *
+*  incidental or consequential damages, so this exclusion and          *
+*  limitation may not apply to You.                                    *
 *                                                                      *
 ************************************************************************
 
