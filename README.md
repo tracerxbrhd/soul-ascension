@@ -1,67 +1,82 @@
-# SOUL-ASCENSION
+![Soul Ascension banner](docs/branding/soulas-banner.png)
 
-SOUL-ASCENSION is a configurable RPG progression mod. Dealing valid damage advances the character level, earned points improve attributes, titles track achievements, and the character interface presents both vanilla and compatible modded attributes.
+# SOUL ASCENSION
 
-## Requirements
+<p align="center">
+  <a href="https://github.com/tracerxbrhd/soul-ascension/releases"><img alt="Release" src="https://img.shields.io/github/v/release/tracerxbrhd/soul-ascension?include_prereleases&sort=semver&label=release"></a>
+  <a href="https://github.com/tracerxbrhd/soul-ascension/actions/workflows/ci.yml"><img alt="Build" src="https://github.com/tracerxbrhd/soul-ascension/actions/workflows/ci.yml/badge.svg?branch=master"></a>
+  <a href="https://modrinth.com/mod/soul-ascension"><img alt="Modrinth" src="https://img.shields.io/badge/Modrinth-Download-00AF5C?logo=modrinth&logoColor=white"></a>
+  <a href="https://www.curseforge.com/minecraft/mc-mods/soul-ascension"><img alt="CurseForge" src="https://img.shields.io/badge/CurseForge-Download-F16436?logo=curseforge&logoColor=white"></a>
+</p>
 
-- Minecraft 1.21.1
-- NeoForge 21.1.234
-- Java 21
-- U-API 2.1.0 or newer (`[2.1.0,3.0.0)`)
+**SOUL ASCENSION turns combat into persistent character progression.** Deal valid damage, gain character experience, level up, invest points into RPG attributes, unlock titles and inspect builds through a dedicated U-API interface.
 
-Epic Fight is optional. When Epic Fight `21.17.3.1` or a newer `21.17.x` release is
-installed, Soul Ascension automatically enables native Strength, Endurance and Agility
-rewards through Epic Fight's public API. Soul Ascension still builds and runs without Epic
-Fight; no Epic Fight classes, code or assets are bundled in the Soul Ascension JAR. See
-[`docs/EPIC_FIGHT_INTEGRATION.md`](docs/EPIC_FIGHT_INTEGRATION.md) for the exact version,
-balance and configuration contract.
+The mod is designed for vanilla-style worlds, RPG modpacks, combat overhauls and multiplayer servers without making optional integrations mandatory.
 
-NeoOrigins is also declared optional and the compile-time contract is pinned to official
-`v2.2.21+1.21.1`. Native Origin/Class display is not active in that release because its published
-JAR does not contain the documented public current-origin accessor. Soul Ascension does not use
-NeoOrigins internals or require a separate adapter mod. The prepared architecture, exact upstream
-method needed, and activation test matrix are documented in
-[`docs/NEOORIGINS_INTEGRATION.md`](docs/NEOORIGINS_INTEGRATION.md).
+## Compatibility
 
-Current version: 2.1.1. Mod ID: `soul_ascension`.
+| Minecraft | Soul Ascension line | U-API | Java | Loader |
+| --- | --- | --- | --- | --- |
+| 1.21.1 | 2.x | 2.x | 21 | NeoForge |
+| 26.2 | 3.x | 3.x | 25 | NeoForge |
 
-Version 2.0 is a clean-install-only release. Worlds, player attachments and configuration files
-from Soul Ascension 1.x are not supported and are not migrated. Start 2.0 with a new world/player
-data and a newly generated `config/uapi/soul-ascension/` directory.
+The default `master` branch currently contains the Minecraft 1.21.1 / Soul Ascension 2.x source line. The latest stable release may target another supported Minecraft version; use the release badge or download pages above for the current published build.
 
 ## Character progression
 
-The Character Screen stages point changes as a preview. `Confirm` sends one server-validated allocation; `Cancel` or closing the screen discards every pending change. Intelligence grants a configurable bonus to vanilla experience and damage-based Soul progression; the default is 2% per allocated point.
+Soul Ascension provides five core characteristics:
 
-At the configured maximum character level, the level bar is filled and displays `MAX LEVEL`. The limit comes from the synchronized runtime server configuration and is not fixed at level 100.
+- **Strength**
+- **Endurance**
+- **Agility**
+- **Intelligence**
+- **Perception**
 
-## Items
+Attribute rewards, caps, progression speed, maximum level and respec behavior are configurable. Point allocation is staged as a preview before the server validates and applies the final build.
 
-- **Soul Badge** opens your editable Character Screen. Using it on another player shows their server-authoritative public character profile; shift-use opens your own screen.
-- **Soul Lens** behaves like a spyglass and shows a compact public-build overlay while aimed at another player.
-- **Amnesia Scroll** resets allocated attributes. It has no crafting recipe and stacks to 16.
-- **Potion of Withered Memory** performs the same respec through a dangerous standalone drink brewed from a long Potion of Weakness and a wither rose.
-- **Black Books** are rare no-recipe consumables for concrete stats: Strength, Endurance, Agility, Intelligence and Perception. A book directly raises its matching stat by 1 and immediately applies the configured attribute rewards. They can appear in stronghold libraries, ancient cities, woodland mansions, end city treasure chests and, very rarely, simple dungeon chests.
+## Core features
 
-Respec is available only through the Amnesia Scroll and Potion of Withered Memory. By default all allocated points are refunded; optional point loss can be enabled in the server config.
+- damage-based character progression and configurable level scaling;
+- RPG attributes with vanilla and compatible modded attribute rewards;
+- unlockable and selectable titles;
+- **Soul Badge** for character profiles;
+- **Soul Lens** for compact build inspection;
+- **Amnesia Scroll** and **Potion of Withered Memory** for respec;
+- rare **Black Books** that permanently improve matching characteristics;
+- optional integrations that remain non-required dependencies.
+
+## Optional integrations
+
+The 1.21.1 line includes optional integration work for Epic Fight and NeoOrigins. Integration availability can differ between Minecraft release lines, so use the documentation that matches the branch or release you are targeting.
+
+- [Epic Fight integration](docs/EPIC_FIGHT_INTEGRATION.md)
+- [NeoOrigins integration](docs/NEOORIGINS_INTEGRATION.md)
+- [Titles and integrations](docs/TITLES_AND_INTEGRATIONS.md)
 
 ## Configuration
 
-Configuration files are created in `config/uapi/soul-ascension/` and are edited manually:
+For the 1.21.1 line, configuration is stored under `config/uapi/soul-ascension/`:
 
-- `server.toml` — progression, stat allocation, respec, Soul Lens gameplay rules and loot toggles;
-- `client.toml` — local attribute presentation and Character Screen display options;
-- `attribute_rewards.json` — the nested stat-to-attribute reward tree.
+- `server.toml` — progression, allocation, respec, Soul Lens rules and loot toggles;
+- `client.toml` — local presentation options;
+- `attribute_rewards.json` — characteristic-to-attribute reward definitions.
 
-There is no custom in-game configuration editor. See [`docs/config.md`](docs/config.md) and [`docs/ATTRIBUTE_REWARDS.md`](docs/ATTRIBUTE_REWARDS.md).
+See [configuration documentation](docs/config.md) and [attribute rewards](docs/ATTRIBUTE_REWARDS.md).
 
-Resource-pack paths, including the replaceable Soul Lens model and texture, are documented in [`docs/resourcepacks.md`](docs/resourcepacks.md). Titles and optional integrations are documented in [`docs/TITLES_AND_INTEGRATIONS.md`](docs/TITLES_AND_INTEGRATIONS.md); Epic Fight and NeoOrigins have dedicated [`Epic Fight`](docs/EPIC_FIGHT_INTEGRATION.md) and [`NeoOrigins`](docs/NEOORIGINS_INTEGRATION.md) integration guides.
+## Building from source
 
-Build on Windows with `gradlew.bat build`. The resulting artifact is
-`build/libs/soul-ascension-2.1.1+mc1.21.1.jar`.
+The default branch requires Java 21 and U-API from the compatible 2.x line.
+
+```bash
+./gradlew build
+```
+
+On Windows:
+
+```powershell
+gradlew.bat build
+```
 
 ## License
 
-Soul Ascension source code is licensed under the [Mozilla Public License 2.0](LICENSE) (`MPL-2.0`). Modified MPL-covered source files distributed to others remain subject to the MPL and their corresponding source must remain available under its terms.
-
-The MPL does not grant rights to the Underworld Studio name, logos, trademarks, or other branding. Third-party software, APIs, libraries, and materials remain subject to their respective licenses and terms. Minecraft and related Minecraft content are owned by their respective rights holders and are not licensed by this project.
+Soul Ascension source code is licensed under the [Mozilla Public License 2.0](LICENSE) (`MPL-2.0`). The Underworld Studio name, logos and branding are not licensed by the MPL.
