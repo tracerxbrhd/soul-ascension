@@ -1,13 +1,13 @@
 ![Soul Ascension banner](docs/branding/soulas-banner.png)
 
-# SOUL ASCENSION
-
 <p align="center">
   <a href="https://github.com/tracerxbrhd/soul-ascension/releases"><img alt="Release" src="https://img.shields.io/github/v/release/tracerxbrhd/soul-ascension?include_prereleases&sort=semver&label=release"></a>
   <a href="https://github.com/tracerxbrhd/soul-ascension/actions/workflows/ci.yml"><img alt="Build" src="https://github.com/tracerxbrhd/soul-ascension/actions/workflows/ci.yml/badge.svg?branch=master"></a>
   <a href="https://modrinth.com/mod/soul-ascension"><img alt="Modrinth" src="https://img.shields.io/badge/Modrinth-Download-00AF5C?logo=modrinth&logoColor=white"></a>
   <a href="https://www.curseforge.com/minecraft/mc-mods/soul-ascension"><img alt="CurseForge" src="https://img.shields.io/badge/CurseForge-Download-F16436?logo=curseforge&logoColor=white"></a>
 </p>
+
+# SOUL ASCENSION
 
 **SOUL ASCENSION turns combat into persistent character progression.** Deal valid damage, gain character experience, level up, invest points into RPG attributes, unlock titles and inspect builds through a dedicated U-API interface.
 
